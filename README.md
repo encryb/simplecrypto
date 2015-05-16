@@ -1,0 +1,1 @@
+# simplecrypto for javascript
