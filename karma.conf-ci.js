@@ -15,14 +15,31 @@ module.exports = function(config) {
 
   // Browsers to run on Sauce Labs
   var customLaunchers = {
-    'SL_Chrome': {
+    'SL_Chrome_Win': {
       base: 'SauceLabs',
-      browserName: 'chrome'
+      browserName: 'chrome',
+      platform: 'Windows 7'
     },
-    'SL_Firefox': {
+    'SL_Firefox_linux': {
+      base: 'SauceLabs',
+      browserName: 'firefox',
+      platform: 'Linux'
+    },
+    'SL_Chrome_Linux': {
+      base: 'SauceLabs',
+      browserName: 'chrome',
+      platform: 'Linux'
+    },
+    'SL_IOS_Safari': {
+      base: 'SauceLabs',
+      browserName: 'iphone',
+      version: '8.1'
+    },
+    'SL_IE': {
       base: 'SauceLabs',
       browserName: 'internet explorer',
-      version: '9'
+      version: '11',
+      platform: 'Windows 8.1'
     }
   };
 
@@ -57,12 +74,12 @@ module.exports = function(config) {
 
     // level of logging
     // possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG
-    logLevel: config.LOG_INFO,
+    logLevel: config.LOG_WARN,
 
     sauceLabs: {
-      testName: 'Karma and Sauce Labs demo'
+      testName: 'SimpleCrypto'
     },
-    captureTimeout: 120000,
+    captureTimeout: 220000,
     customLaunchers: customLaunchers,
 
     // start these browsers

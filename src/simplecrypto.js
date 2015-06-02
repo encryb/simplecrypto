@@ -24,8 +24,7 @@
             name: "HMAC",
             hash: { name: "SHA-256" }
         },
-
-    }
+    };
 
     function combineBuffers(buffer1, buffer2) {
         var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
@@ -42,7 +41,7 @@
             result.onerror = onError;
             result.oncomplete = function (event) {
                 onSuccess(event.target.result);
-            }
+            };
         }
     }
 
@@ -53,12 +52,21 @@
                 errorFunc(err);
             },
             nextFunc);
-    }
+    };
 
 
     var simpleCrypto = {
 
-        asym : { 
+        asym : {
+            
+            generateKeys: function(onError, onSuccess) {
+                simpleCrypto.asym.generateEncryptKey(onError, function(encryptKey) {
+                    simpleCrypto.asym.generateSignKey(onError, function(signKey) {
+                        onSuccess({encrypt: encryptKey, sign: signKey});    
+                    }); 
+                });  
+            },
+            
             generateEncryptKey: function (onError, onSuccess) {
 
                 var scope = {};
@@ -117,8 +125,8 @@
                             scope["privateKey"] = privateKey;
                             onSuccess();
                         }
-                    )
-                }
+                    );
+                };
 
                 next(generateKey, "Could not generate encrypt key", onError,
                 next(exportPrivateKey, "Could not export private encrypt key", onError,
@@ -148,7 +156,6 @@
                             ["sign", "verify"]
                         ), onError,
                         function (encryptKeys) {
-                            console.log("1.1");
                             scope["signKeys"] = encryptKeys;
                             onSuccess();
                         }
@@ -156,13 +163,11 @@
                 };
 
                 var exportPrivateKey = function (onError, onSuccess) {
-                    console.log("1.2a", scope.signKeys.privateKey);
                     wrap(window.crypto.subtle.exportKey(
                             "jwk",
                             scope.signKeys.privateKey
                         ), onError,
                         function (privateJwk) {
-                            console.log("1.2");
                             scope["privateJwk"] = privateJwk;
                             onSuccess();
                         }
@@ -175,7 +180,6 @@
                             scope.signKeys.publicKey
                         ), onError,
                         function (publicJwk) {
-                            console.log("1.3");
                             scope["publicJwk"] = publicJwk;
                             onSuccess();
                         }
@@ -191,12 +195,11 @@
                             ["sign"]
                         ), onError,
                         function (privateKey) {
-                            console.log("1.4");
                             scope["privateKey"] = privateKey;
                             onSuccess();
                         }
-                    )
-                }
+                    );
+                };
 
                 next(generateKey, "Could not generate encrypt key", onError,
                 next(exportPrivateKey, "Could not export private encrypt key", onError,
@@ -242,7 +245,7 @@
                          scope["combinedKeys"] = keys;
                          onSuccess();
                      });
-                }
+                };
 
                 var verifyKeys = function (onError, onSuccess) {
                     wrap(window.crypto.subtle.verify(
@@ -275,27 +278,24 @@
                         dict["aesKey"] = aesKey;
                         dict["hmacKey"] = hmacKey;
 
-                        simpleCrypto.sym.decrypt(dict, onError, onSuccess);
+                        simpleCrypto.sym.decrypt(dict.data, {aesKey: aesKey, hmacKey: hmacKey}, onError, onSuccess);
                     }
                )))();
             },
 
             encryptAndSign: function (recepientsEncryptPublicKey, mySignPrivateKey, data, onError, onSuccess) {
 
-                var scope;
+                var scope = {};
 
                 var encryptData = function(onError, onSuccess) {
                         
-                    simpleCrypto.sym.encrypt(data, onError, function (aesDict) {
-                        scope = aesDict;
-                        var combinedKeys = combineBuffers(aesDict.aesKey, aesDict.hmacKey);
+                    simpleCrypto.sym.genKeysAndEncrypt(data, onError, function (aesDict) {
+                        var combinedKeys = combineBuffers(aesDict.keys.aesKey, aesDict.keys.hmacKey);
                         scope["combinedKeys"] = combinedKeys;
-                        scope["cipherdata"] = aesDict.cipherdata;
-                        scope["hmac"] = aesDict.hmac;
+                        scope["data"] = aesDict.data;
                         onSuccess();
                     });
-                }
-
+                };
 
                 var encryptKeys = function (onError, onSuccess) {
                     wrap(window.crypto.subtle.encrypt(
@@ -309,7 +309,7 @@
                             onSuccess();
                         }
                     );
-                }
+                };
 
                 var signKeys = function (onError, onSuccess) {
                     wrap(window.crypto.subtle.sign(
@@ -324,7 +324,7 @@
                             onSuccess();
                         }
                     );
-                }
+                };
                 var signEncryptedKeys = function (onError, onSuccess) {
                     wrap(window.crypto.subtle.sign(
                             { name: config.rsaSignCipher, hash: config.rsaHash },
@@ -338,7 +338,7 @@
                             onSuccess();
                         }
                     );
-                }
+                };
 
 
                 next(encryptData, "Could not encrypt data", onError,
@@ -348,7 +348,7 @@
                     function () {                       
                         onSuccess({
                             // symmetric encryption output 
-                            cipherdata: scope.cipherdata, hmac: scope.hmac,
+                            data: scope.data,
                             // encrypted symmetric encryption keys 
                             encryptedKeys: scope.encryptedKeys,
                             // signatures of plain and encryped symmetric encryption keys
@@ -361,177 +361,223 @@
         },
 
         sym: {
-            encrypt: function (data, onError, onSuccess) {
-
+            
+            generateKeys: function(onError, onSuccess) {
                 var result = {};
 
-                var generateKeyAES = function (onError, onSuccess) {
+                var generateKeyAES = function (_onError, _onSuccess) {                   
                     wrap(window.crypto.subtle.generateKey(
                             { name: config.aesCipher, length: config.aesLength },
                             true,
                             ["encrypt", "decrypt"]
                         ),
-                        onError,
+                        _onError,
                         function (aesKey) {
-                            result["aesKey"] = aesKey;
-                            onSuccess();
+                            result["aesKeyObj"] = aesKey;
+                            _onSuccess();
                         }
-                    )
-                }
+                    );
+                };
 
-                var generateKeyHMAC = function (onError, onSuccess) {
+                var generateKeyHMAC = function (_onError, _onSuccess) {
                     wrap(window.crypto.subtle.generateKey(
                             config.hmacOptions,
                             true,
                             ["sign", "verify"]
                         ),
-                        onError,
+                        _onError,
                         function (hmacKey) {
-                            result["hmacKey"] = hmacKey;
-                            onSuccess();
+                            result["hmacKeyObj"] = hmacKey;
+                            _onSuccess();
                         }
                     );
-                }
+                };
+                
+                
+                var exportKeyAES = function (_onError, _onSuccess) {
+                    wrap(window.crypto.subtle.exportKey("raw", result.aesKeyObj),
+                        _onError,
+                        function (aesKey) {
+                            result["aesKey"] = aesKey;
+                            _onSuccess();
+                        }
+                    );
+                };
 
-                var encryptAES = function (onError, onSuccess) {
+                var exportKeyHMAC = function (_onError, _onSuccess) {
+                    wrap(window.crypto.subtle.exportKey("raw", result.hmacKeyObj),
+                        _onError,
+                        function (hmacKey) {
+                            result["hmacKey"] = hmacKey;
+                            _onSuccess();
+                        }
+                    );
+                };
+                
+                next(generateKeyAES, "Could not generate AES key", onError,
+                next(generateKeyHMAC, "Could not generate HMAC key", onError,
+                next(exportKeyAES, "Could not export AES key", onError, 
+                next(exportKeyHMAC, "Could not export HMAC key", onError,
+                    function () {
+                        onSuccess(result);
+                    }
+                ))))();
+            },
+            
+            importKeys: function(keys, onError, onSuccess) {
+                if (!keys || !keys.hasOwnProperty("aesKey") || !keys.hasOwnProperty("hmacKey")) {    
+                    onError("Missing keys");
+                    return;
+                }
+                
+                // keys already has cached imported object
+                if (keys.hasOwnProperty("aesKeyObj") && keys.hasOwnProperty("hmacKeyObj")) {
+                    onSuccess(keys);
+                    return;
+                }
+                
+                var importKeyAES = function (_onError, _onSuccess) {     
+                    wrap(window.crypto.subtle.importKey(
+                            "raw",
+                            keys.aesKey,
+                            { name: config.aesCipher },
+                            false,
+                            ["encrypt", "decrypt"]),
+                        _onError,
+                        function (aesKeyObj) {
+                            keys["aesKeyObj"] = aesKeyObj;
+                            _onSuccess();
+                        }
+                    );               
+                };
+                var importKeyHMAC = function(_onError, _onSuccess) {
+                    wrap(window.crypto.subtle.importKey(
+                            "raw",
+                            keys.hmacKey,
+                            config.hmacOptions,
+                            false,
+                            ["sign", "verify"]),
+                        _onError,
+                        function (hmacKeyObj) {
+                            keys["hmacKeyObj"] = hmacKeyObj;
+                            _onSuccess();
+                        }
+                    );
+                };
+                
+                next(importKeyAES, "Could not import AES key", onError, 
+                next(importKeyHMAC, "Could not import HMAC key", onError,
+                    function () {
+                        onSuccess();
+                    }
+                ))();
+                
+            },
+            
+            genKeysAndEncrypt: function(data, onError, onSuccess) {
+                simpleCrypto.sym.generateKeys(onError, function(keys) {
+                    simpleCrypto.sym.encrypt(data, keys, onError, onSuccess);
+                });
+            },
+            
+            encrypt: function (data, keys, onError, onSuccess) {
+
+                var result = {};
+                
+                var getKeys = function (_onError, _onSuccess) { 
+                   simpleCrypto.sym.importKeys(keys, _onError, _onSuccess);
+                };
+
+                var encryptAES = function (_onError, _onSuccess) {
                     var iv = window.crypto.getRandomValues(new Uint8Array(config.aesIvLength));
                     wrap(window.crypto.subtle.encrypt(
                             { name: config.aesCipher, iv: iv },
-                            result.aesKey,
+                            keys.aesKeyObj,
                             data
                         ),
-                        onError,
+                        _onError,
                         function (encrypted) {
                             var combined = combineBuffers(iv, encrypted);
                             result["cipherdata"] = combined;
-                            onSuccess();
+                            _onSuccess();
                         }
-                    )
-                }
+                    );
+                };
 
-                var signHMAC = function (onError, onSuccess) {
+                var signHMAC = function (_onError, _onSuccess) {
                     wrap(window.crypto.subtle.sign(
                             config.hmacOptions,
-                            result.hmacKey,
+                            keys.hmacKeyObj,
                             result.cipherdata
                         ),
-                        onError,
+                        _onError,
                         function (hmac) {
                             result["hmac"] = hmac;
-                            onSuccess();
-                        }
-                    )
-                }
-
-                var exportKeyAES = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.exportKey("raw", result.aesKey),
-                        onError,
-                        function (rawAesKey) {
-                            result["rawAesKey"] = rawAesKey;
-                            onSuccess();
+                            _onSuccess();
                         }
                     );
-                }
+                };
 
-                var exportKeyHMAC = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.exportKey("raw", result.hmacKey),
-                        onError,
-                        function (rawHmacKey) {
-                            result["rawHmacKey"] = rawHmacKey;
-                            onSuccess();
-                        }
-                    );
-                }
 
-                next(generateKeyAES, "Could not generate AES key", onError,
-                next(generateKeyHMAC, "Could not generate HMAC key", onError,
+                next(getKeys, "Could not get keys", onError,
                 next(encryptAES, "Could not AES Encrypt", onError,
                 next(signHMAC, "Could not HMAC sign", onError,
-                next(exportKeyAES, "Could not export AES key", onError,
-                next(exportKeyHMAC, "Could not export HMAC key", onError,
                     function () {
-                        onSuccess({ aesKey: result.rawAesKey, hmacKey: result.rawHmacKey, cipherdata: result.cipherdata, hmac: result.hmac });
+                        var data = { cipherdata: result.cipherdata, hmac: result.hmac };
+                        onSuccess({ keys: keys, data: data });
                     }
-                ))))))();
+                )))();
 
             },
 
-            decrypt: function (dict, onError, onSuccess) {
 
-                var scope = {};
-                var importKeyAES = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.importKey(
-                            "raw",
-                            dict.aesKey,
-                            { name: config.aesCipher },
-                            false,
-                            ["decrypt"]),
-                        onError,
-                        function (result) {
-                            scope["aesKey"] = result;
-                            onSuccess();
-                        }
-                    );
+            decrypt: function (data, keys, onError, onSuccess) {
+     
+                var getKeys = function (_onError, _onSuccess) {
+                    simpleCrypto.sym.importKeys(keys, _onError, _onSuccess);
                 };
-
-                var importKeyHMAC = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.importKey(
-                            "raw",
-                            dict.hmacKey,
-                            config.hmacOptions,
-                            false,
-                            ["verify"]),
-                        onError,
-                        function (result) {
-                            scope["hmacKey"] = result;
-                            onSuccess();
-                        }
-                    );
-                };
-
-                var verifyHMAC = function (onError, onSuccess) {
+                
+                var verifyHMAC = function (_onError, _onSuccess) {
                     wrap(window.crypto.subtle.verify(
                             config.hmacOptions,
-                            scope.hmacKey,
-                            dict.hmac,
-                            dict.cipherdata),
-                         onError,
+                            keys.hmacKeyObj,
+                            data.hmac,
+                            data.cipherdata),
+                         _onError,
                          function (isValid) {
                              if (!isValid) {
-                                 onError();
+                                 _onError();
                              }
                              else {
-                                 onSuccess();
+                                 _onSuccess();
                              }
                          }
                     );
                 };
 
-                var decryptAES = function (onError, onSuccess) {
-                    var iv = new Uint8Array(dict.cipherdata, 0, 16);
-                    var encrypted = new Uint8Array(dict.cipherdata, 16);
+                var decryptAES = function (_onError, _onSuccess) {
+                    var iv = new Uint8Array(data.cipherdata, 0, 16);
+                    var encrypted = new Uint8Array(data.cipherdata, 16);
 
                     wrap(window.crypto.subtle.decrypt(
                             { name: config.aesCipher, iv: iv },
-                            scope.aesKey,
+                            keys.aesKeyObj,
                             encrypted
                         ),
-                        onError,
-                        onSuccess
-                    )
-                }
+                        _onError,
+                        _onSuccess
+                    );
+                };
 
-                next(importKeyAES, "Could not generate AES key", onError,
-                next(importKeyHMAC, "Could not import HMAC key", onError,
+                next(getKeys, "Could not get keys", onError,
                 next(verifyHMAC, "Could not verify HMAC key", onError,
                 next(decryptAES, "Could not AES decrypt", onError,
-                    function (data) {
-                        onSuccess(data);
+                    function (decrypted) {
+                        onSuccess(decrypted);
                     }
-                ))))();
-
+                )))();
             }
         }
-    }
+    };
     return simpleCrypto;
 }));
