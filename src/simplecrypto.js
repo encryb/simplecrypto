@@ -425,13 +425,13 @@
             },
             
             importKeys: function(keys, onError, onSuccess) {
-                if (!keys || !keys.hasOwnProperty("aesKey") || !keys.hasOwnProperty("hmacKey")) {    
+                if (!keys || !("aesKey" in keys) || !("hmacKey" in keys)) {    
                     onError("Missing keys");
                     return;
                 }
                 
                 // keys already has cached imported object
-                if (keys.hasOwnProperty("aesKeyObj") && keys.hasOwnProperty("hmacKeyObj")) {
+                if (("aesKeyObj" in keys) && ("hmacKeyObj" in keys)) {
                     onSuccess(keys);
                     return;
                 }
@@ -489,7 +489,13 @@
                 };
 
                 var encryptAES = function (_onError, _onSuccess) {
-                    var iv = window.crypto.getRandomValues(new Uint8Array(config.aesIvLength));
+                    var iv;
+                    if ("iv" in keys) {
+                        iv = keys.iv; 
+                    }
+                    else {
+                        iv = window.crypto.getRandomValues(new Uint8Array(config.aesIvLength));
+                    }
                     wrap(window.crypto.subtle.encrypt(
                             { name: config.aesCipher, iv: iv },
                             keys.aesKeyObj,

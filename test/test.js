@@ -37,7 +37,7 @@ describe('symmetric', function() {
 });
 
 
-/*
+
 describe('symmetricWithKeys', function() {
 
     var testArray = new Uint8Array([1,2,3]);
@@ -62,7 +62,6 @@ describe('symmetricWithKeys', function() {
         expect(new Uint8Array(result)).not.toEqual(wrongArray);
     });
 });
-*/
 
 
 describe('asymmetric', function() {
