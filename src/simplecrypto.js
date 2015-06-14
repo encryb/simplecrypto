@@ -9,21 +9,21 @@
 }(this, function () {
     window.crypto = window.crypto || window.msCrypto;
     window.crypto.subtle = window.crypto.subtle || window.crypto.webkitSubtle;
+    window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
         
     var config = {
         aesCipher: "AES-CBC",
         aesLength: 128,
         aesIvLength: 16,
-
-        rsaEncryptCipher: "RSA-OAEP",
-        rsaSignCipher: "RSASSA-PKCS1-v1_5", 
-        rsaLength: 2048,
-        rsaHash: "SHA-256",
-
         hmacOptions: {
             name: "HMAC",
             hash: { name: "SHA-256" }
         },
+
+        rsaEncryptCipher: "RSA-OAEP",
+        rsaSignCipher: "RSASSA-PKCS1-v1_5", 
+        rsaLength: 2048,
+        rsaHash: "SHA-256"
     };
 
     function combineBuffers(buffer1, buffer2) {
@@ -55,6 +55,148 @@
     };
 
 
+    var _asym = {
+        generateEncryptKeys: function(onError, onSuccess) {
+            wrap(window.crypto.subtle.generateKey(
+                    {
+                        name: config.rsaEncryptCipher,
+                        modulusLength: config.rsaLength,
+                        publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+                        hash: { name: config.rsaHash }
+                    },
+                    true,
+                    ["encrypt", "decrypt"]
+                ), 
+                onError,
+                onSuccess
+            );        
+        },
+        generateSignKeys: function (onError, onSuccess) {
+            wrap(window.crypto.subtle.generateKey(
+                    {
+                        name: config.rsaSignCipher,
+                        modulusLength: config.rsaLength,
+                        publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+                        hash: { name: config.rsaHash }
+                    },
+                    true,
+                    ["sign", "verify"]
+                ), 
+                onError,
+                onSuccess
+            );
+        },
+        
+        importEncryptPrivateKey: function(jwk, onError, onSuccess) {
+            wrap(window.crypto.subtle.importKey(
+                    "jwk",
+                    jwk,
+                    { name: config.rsaEncryptCipher, hash: { name: config.rsaHash } },
+                    false,
+                    ["decrypt"] 
+                ), onError,
+                function (privateKey) {
+                    onSuccess(privateKey);
+                }
+            );  
+        },
+        importSignPrivateKey: function (jwk, onError, onSuccess) {
+            wrap(window.crypto.subtle.importKey(
+                    "jwk",
+                    jwk,
+                    { name: config.rsaSignCipher, hash: { name: config.rsaHash } },
+                    false,
+                    ["sign"]
+                ), onError,
+                function (privateKey) {
+                    onSuccess(privateKey);
+                }
+            );
+        },        
+        exportKey: function(key, onError, onSuccess) {
+            wrap(window.crypto.subtle.exportKey(
+                    "jwk",
+                    key
+                ), onError,
+                function (jwk) {
+                    onSuccess(jwk);
+                }
+            );
+        },
+        
+        sign: function (data, key, onError, onSuccess) {
+            wrap(window.crypto.subtle.sign(
+                    { name: config.rsaSignCipher, hash: config.rsaHash },
+                    key, 
+                    data
+                ),
+                onError,
+                function (signature) {
+                    onSuccess(signature);
+                }
+            );
+        },
+
+        verifySignature: function(key, signature, data, onError, onSuccess) {
+            wrap(window.crypto.subtle.verify(
+                    { name: config.rsaSignCipher, hash: config.rsaHash },
+                    key,
+                    signature,
+                    data
+            ),
+            onError,
+            function (isValid) {
+                if (!isValid) {
+                    onError();
+                }
+                else {
+                    onSuccess();
+                }
+            });
+        },
+        
+        encrypt: function (publicKey, data, onError, onSuccess) {
+            wrap(window.crypto.subtle.encrypt(
+                    { name: config.rsaEncryptCipher, hash: config.rsaHash },
+                    publicKey,
+                    data
+                ),
+                onError,
+                function (encrypted) {
+                    onSuccess(encrypted);
+                }
+            );
+        },
+        
+        decrypt: function(privateKey, data, onError, onSuccess) {
+             wrap(window.crypto.subtle.decrypt(
+                    { name: config.rsaEncryptCipher, hash: config.rsaHash },
+                    privateKey,
+                    data
+             ),
+             onError,
+             function (keys) {
+                 onSuccess(keys);
+             });
+        },
+        
+        aesEncrypt: function(data, onError, onSuccess) {                        
+            simpleCrypto.sym.genKeysAndEncrypt(data, onError, function (aesDict) {
+                var combinedKeys = combineBuffers(aesDict.keys.aesKey, aesDict.keys.hmacKey);
+                onSuccess(combinedKeys, aesDict.data);
+            });
+        },
+        
+        aesDecrypt: function(combinedkeys, data, onError, onSuccess) {
+            // todo, check sizes              
+            var split = config.aesLength / 8;
+            var aesKey = new Uint8Array(combinedkeys, 0, split);
+            var hmacKey = new Uint8Array(combinedkeys, split);
+            simpleCrypto.sym.decrypt(data, {aesKey: aesKey, hmacKey: hmacKey}, onError, onSuccess);
+        }
+    }
+
+
     var simpleCrypto = {
 
         asym : {
@@ -69,294 +211,92 @@
             
             generateEncryptKey: function (onError, onSuccess) {
 
-                var scope = {};
+                _asym.generateEncryptKeys(onError.bind(null, "Could not generate encrypt key"), function(keys) {
+                 _asym.exportKey(keys.publicKey, onError.bind(null, "Could not export public encrypt key"), function(publicJwk) {
+                  _asym.exportKey(keys.privateKey, onError.bind(null, "Could not export private encrypt key"), function(privateJwk){
+                   _asym.importEncryptPrivateKey(privateJwk, onError.bind(null, "Could not import private encrypt key"), function(privateKey) {
 
-                var generateKey = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.generateKey(
-                            {
-                                name: config.rsaEncryptCipher,
-                                modulusLength: config.rsaLength,
-                                publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-                                hash: { name: config.rsaHash }
-                            },
-                            true,
-                            ["encrypt", "decrypt"]
-                        ), onError,
-                        function (encryptKeys) {
-                            scope["encryptKeys"] = encryptKeys;
-                            onSuccess();
-                        }
-                    );
-                };
+                     onSuccess({privateKey: privateKey, publicKey: keys.publicKey, 
+                                privateJwk: privateJwk, publicJwk: publicJwk});
 
-                var exportPrivateKey = function(onError, onSuccess) {
-                    wrap(window.crypto.subtle.exportKey(
-                            "jwk",
-                            scope.encryptKeys.privateKey
-                        ), onError,
-                        function (privateJwk) {
-                            scope["privateJwk"] = privateJwk;
-                            onSuccess();
-                        }
-                    );
-                };
-
-                var exportPublicKey = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.exportKey(
-                            "jwk",
-                            scope.encryptKeys.publicKey
-                        ), onError,
-                        function (publicJwk) {
-                            scope["publicJwk"] = publicJwk;
-                            onSuccess();
-                        }
-                    );
-                };
-
-                var importPrivateKey = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.importKey(
-                            "jwk",
-                            scope.privateJwk,
-                            { name: config.rsaEncryptCipher, hash: { name: config.rsaHash } },
-                            false,
-                            ["decrypt"] 
-                        ), onError,
-                        function (privateKey) {
-                            scope["privateKey"] = privateKey;
-                            onSuccess();
-                        }
-                    );
-                };
-
-                next(generateKey, "Could not generate encrypt key", onError,
-                next(exportPrivateKey, "Could not export private encrypt key", onError,
-                next(importPrivateKey, "Could not import private encrypt key", onError,
-                next(exportPublicKey, "Could not export public encrypt key", onError,
-                function () {
-                    onSuccess({privateKey: scope.privateKey, publicKey: scope.encryptKeys.publicKey, 
-                                privateJwk: scope.privateJwk, publicJwk: scope.publicJwk});
-
-                }
-                ))))();
+                   });    
+                  });    
+                 });
+                });
             },
 
             generateSignKey: function (onError, onSuccess) {
 
-                var scope = {};
+                _asym.generateSignKeys(onError.bind(null, "Could not generate sign key"), function(keys) {
+                 _asym.exportKey(keys.publicKey, onError.bind(null, "Could not export public sign key"), function(publicJwk) {
+                  _asym.exportKey(keys.privateKey, onError.bind(null, "Could not export private sign key"), function(privateJwk){
+                   _asym.importSignPrivateKey(privateJwk, onError.bind(null, "Could not import private sign key"), function(privateKey) {
 
-                var generateKey = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.generateKey(
-                            {
-                                name: config.rsaSignCipher,
-                                modulusLength: config.rsaLength,
-                                publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-                                hash: { name: config.rsaHash }
-                            },
-                            true,
-                            ["sign", "verify"]
-                        ), onError,
-                        function (encryptKeys) {
-                            scope["signKeys"] = encryptKeys;
-                            onSuccess();
-                        }
-                    );
-                };
+                     onSuccess({privateKey: privateKey, publicKey: keys.publicKey, 
+                                privateJwk: privateJwk, publicJwk: publicJwk});
 
-                var exportPrivateKey = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.exportKey(
-                            "jwk",
-                            scope.signKeys.privateKey
-                        ), onError,
-                        function (privateJwk) {
-                            scope["privateJwk"] = privateJwk;
-                            onSuccess();
-                        }
-                    );
-                };
-
-                var exportPublicKey = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.exportKey(
-                            "jwk",
-                            scope.signKeys.publicKey
-                        ), onError,
-                        function (publicJwk) {
-                            scope["publicJwk"] = publicJwk;
-                            onSuccess();
-                        }
-                    );
-                };
-
-                var importPrivateKey = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.importKey(
-                            "jwk",
-                            scope.privateJwk,
-                            { name: config.rsaSignCipher, hash: { name: config.rsaHash } },
-                            false,
-                            ["sign"]
-                        ), onError,
-                        function (privateKey) {
-                            scope["privateKey"] = privateKey;
-                            onSuccess();
-                        }
-                    );
-                };
-
-                next(generateKey, "Could not generate encrypt key", onError,
-                next(exportPrivateKey, "Could not export private encrypt key", onError,
-                next(importPrivateKey, "Could not import private encrypt key", onError,
-                next(exportPublicKey, "Could not export public encrypt key", onError,
-                function () {
-                    onSuccess({privateKey: scope.privateKey, publicKey: scope.signKeys.publicKey, 
-                                privateJwk: scope.privateJwk, publicJwk: scope.publicJwk});
-                }
-                ))))(); 
+                   });    
+                  });    
+                 });
+                });
             },
 
-            verifyAndDecrypt: function (myEncryptPrivateKey, sendersSignPublicKey, dict, onError, onSuccess) {
-
-                var scope = {};
-
-                var verifyEncryptedKeys = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.verify(
-                            { name: config.rsaSignCipher, hash: config.rsaHash },
-                            sendersSignPublicKey,
-                            dict.encryptedKeysSignature,
-                            dict.encryptedKeys
-                    ),
-                    onError,
-                    function (isValid) {
-                        if (!isValid) {
-                            onError();
-                        }
-                        else {
-                            onSuccess();
-                        }
-                    });
-                };
-
-                var decryptKeys = function (onError, onSuccess) {
-                     wrap(window.crypto.subtle.decrypt(
-                            { name: config.rsaEncryptCipher, hash: config.rsaHash },
-                            myEncryptPrivateKey,
-                            dict.encryptedKeys
-                     ),
-                     onError,
-                     function (keys) {
-                         scope["combinedKeys"] = keys;
-                         onSuccess();
-                     });
-                };
-
-                var verifyKeys = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.verify(
-                            { name: config.rsaSignCipher, hash: config.rsaHash },
-                            sendersSignPublicKey,
-                            dict.keysSignature,
-                            scope.combinedKeys
-                    ),
-                    onError,
-                    function (isValid) {
-                        if (!isValid) {
-                            onError();
-                        }
-                        else {
-                            onSuccess();
-                        }
-                    });
-                };
-
-
-                next(verifyEncryptedKeys, "Could not verify encrypted key", onError,
-                next(decryptKeys, "Could not decrypt keys", onError,
-                next(verifyKeys, "Could not verify keys", onError,
-                    function () {
-                        var keys = scope.combinedKeys;
-                        var split = config.aesLength / 8;
-                        var aesKey = new Uint8Array(keys, 0, split);
-                        var hmacKey = new Uint8Array(keys, split);
-
-                        dict["aesKey"] = aesKey;
-                        dict["hmacKey"] = hmacKey;
-
-                        simpleCrypto.sym.decrypt(dict.data, {aesKey: aesKey, hmacKey: hmacKey}, onError, onSuccess);
-                    }
-               )))();
+            decrypt: function (decryptKey, dict, onError, onSuccess) {
+                _asym.decrypt(decryptKey, dict.encryptedKeys, onError.bind(null, "Could not decrypt keys"), function(combinedKeys){
+                    _asym.aesDecrypt(combinedKeys, dict.data, onError, onSuccess);
+                });
             },
 
-            encryptAndSign: function (recepientsEncryptPublicKey, mySignPrivateKey, data, onError, onSuccess) {
 
-                var scope = {};
+            verifyAndDecrypt: function (decryptKey, verifyKey, dict, onError, onSuccess) {
+                // verify signature of encrypted keys
+                // decrypt keys
+                // verify signature of decrypted keys
+                // decrypt data 
+                _asym.verifySignature(verifyKey, dict.encryptedKeysSignature, dict.encryptedKeys, onError.bind(null, "Could not verify encrypted keys"), function(){
+                 _asym.decrypt(decryptKey, dict.encryptedKeys, onError.bind(null, "Could not decrypt keys"), function(combinedKeys){
+                  _asym.verifySignature(verifyKey, dict.keysSignature, combinedKeys, onError.bind(null, "Could not verify keys"), function(){
+                   _asym.aesDecrypt(combinedKeys, dict.data, onError, onSuccess);
+                   });
+                 });
+                });
+            },
+            
+            encrypt: function(encryptKey, data, onError, onSuccess) {
+                _asym.aesEncrypt(data, onError.bind(null, "Could not encrypt data"), function(combinedKeys, encrypted){
+                 _asym.encrypt(encryptKey, combinedKeys, onError.bind("Could not encrypt AES keys"), function(encryptedKeys) {
+                  onSuccess({
+                    // symmetric encryption output 
+                    data: encrypted,
+                    // encrypted symmetric encryption keys 
+                    encryptedKeys: encryptedKeys,
+                  });         
+                 });           
+                });    
+            },
 
-                var encryptData = function(onError, onSuccess) {
-                        
-                    simpleCrypto.sym.genKeysAndEncrypt(data, onError, function (aesDict) {
-                        var combinedKeys = combineBuffers(aesDict.keys.aesKey, aesDict.keys.hmacKey);
-                        scope["combinedKeys"] = combinedKeys;
-                        scope["data"] = aesDict.data;
-                        onSuccess();
-                    });
-                };
-
-                var encryptKeys = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.encrypt(
-                            { name: config.rsaEncryptCipher, hash: config.rsaHash },
-                            recepientsEncryptPublicKey,
-                            scope.combinedKeys
-                        ),
-                        onError,
-                        function (encryptedKeys) {
-                            scope["encryptedKeys"] = encryptedKeys;
-                            onSuccess();
-                        }
-                    );
-                };
-
-                var signKeys = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.sign(
-                            { name: config.rsaSignCipher, hash: config.rsaHash },
-                            mySignPrivateKey,
-                            scope.combinedKeys,
-                            data
-                        ),
-                        onError,
-                        function (keysSignature) {
-                            scope["keysSignature"] = keysSignature;
-                            onSuccess();
-                        }
-                    );
-                };
-                var signEncryptedKeys = function (onError, onSuccess) {
-                    wrap(window.crypto.subtle.sign(
-                            { name: config.rsaSignCipher, hash: config.rsaHash },
-                            mySignPrivateKey,
-                            scope.encryptedKeys,
-                            data
-                        ),
-                        onError,
-                        function (encryptedKeysSignature) {
-                            scope["encryptedKeysSignature"] = encryptedKeysSignature;
-                            onSuccess();
-                        }
-                    );
-                };
-
-
-                next(encryptData, "Could not encrypt data", onError,
-                next(signKeys, "Could not sign AES keys", onError,
-                next(encryptKeys, "Could not encrypt AES keys", onError,
-                next(signEncryptedKeys, "Could not sign encrypted AES keys", onError,
-                    function () {                       
-                        onSuccess({
-                            // symmetric encryption output 
-                            data: scope.data,
-                            // encrypted symmetric encryption keys 
-                            encryptedKeys: scope.encryptedKeys,
-                            // signatures of plain and encryped symmetric encryption keys
-                            keysSignature: scope.keysSignature, encryptedKeysSignature: scope.encryptedKeysSignature
-                        });
-                    }
-                ))))();
-
+            encryptAndSign: function (encryptKey, signKey, data, onError, onSuccess) {
+                // encrypt data
+                // sign keys
+                // encrypt keys
+                // sign encrypted keys
+                _asym.aesEncrypt(data, onError.bind(null, "Could not encrypt data"), function(combinedKeys, encrypted){
+                 _asym.sign(combinedKeys, signKey, onError.bind(null, "Could not sign AES keys"), function(keysSignature) {
+                  _asym.encrypt(encryptKey, combinedKeys, onError.bind("Could not encrypt AES keys"), function(encryptedKeys) {
+                   _asym.sign(encryptedKeys, signKey, onError.bind(null, "Could not sign encrypted AES keys"), function(encryptedKeysSignature) {
+                    onSuccess({
+                        // symmetric encryption output 
+                        data: encrypted,
+                        // encrypted symmetric encryption keys 
+                        encryptedKeys: encryptedKeys,
+                        // signatures of plain and encryped symmetric encryption keys
+                        keysSignature: keysSignature, encryptedKeysSignature: encryptedKeysSignature
+                    });         
+                   });       
+                  });
+                 })    
+                });
+                
             },
         },
 
@@ -585,5 +525,60 @@
             }
         }
     };
+    var dbUtil = {
+        _version: 1,
+        _openDB: function(onError, onSuccess, func) {
+            var request = indexedDB.open("simplecrypto", this._version);
+
+            request.onupgradeneeded = function (e) {
+                var db = e.target.result;
+                e.target.transaction.onerror = function (event) {
+                    console.log("transaction failure", event);
+                };
+                db.createObjectStore("keys");
+            };
+
+            request.onsuccess = function (e) {
+                var db = e.target.result;
+               
+                func(db, function() {
+                    db.close();
+                })
+                db.transaction(["keys"], "readwrite").objectStore("keys").get("RSA");
+            };
+
+            request.onerror = function (event) {
+                onError("Error opening DB", event);
+            };
+        },   
+        store: function(key, value, onError, onSuccess) {
+            this._openDB(onError, onSuccess, function(db, closeDB) {
+                var request = db.transaction(["keys"], "readwrite").objectStore("keys").put(value, key);
+                request.onsuccess = function(){
+                    closeDB();
+                    onSuccess();
+                };
+                request.onerror = function(event) {
+                    closeDB();
+                    onError("Error storing value", event);
+                };
+            });
+        },
+        fetch: function(key, onError, onSuccess) {
+            this._openDB(onError, onSuccess, function(db, closeDB) {
+                var request = db.transaction(["keys"], "readonly").objectStore("keys").get(key);
+                request.onsuccess = function(){
+                    closeDB();
+                    onSuccess(request.result);
+                };
+                request.onerror = function(event) {
+                    closeDB();
+                    onError("Error storing value", event);
+                };
+            });
+        }
+    }
+    simpleCrypto.db = dbUtil;
+    
     return simpleCrypto;
 }));
