@@ -7,6 +7,14 @@
         root.simpleCrypto = factory();
     }
 }(this, function () {
+    var oldSubtle = false;
+    if (window.crypto && window.crypto.webkitSubtle && window.crypto.subtle === undefined){
+        oldSubtle = true;
+    }
+    if (window.msCrypto && (window.crypto === undefined || window.crypto.subtle === undefined)){
+        oldSubtle = true;
+    }
+    
     window.crypto = window.crypto || window.msCrypto;
     window.crypto.subtle = window.crypto.subtle || window.crypto.webkitSubtle;
     window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
@@ -20,10 +28,12 @@
             hash: { name: "SHA-256" }
         },
 
-        rsaEncryptCipher: "RSA-OAEP",
-        rsaSignCipher: "RSASSA-PKCS1-v1_5", 
         rsaLength: 2048,
-        rsaHash: "SHA-256"
+        
+        rsaEncryptCipher: "RSA-OAEP",
+        rsaEncryptHash: "SHA-1",
+        rsaSignCipher: "RSASSA-PKCS1-v1_5",
+        rsaSignHash: "SHA-256"
     };
 
     function combineBuffers(buffer1, buffer2) {
@@ -44,16 +54,141 @@
             };
         }
     }
+    
+    function bytesToString(bytes) {
+        return String.fromCharCode.apply(null, new Uint8Array(bytes));
+    }
 
-    var next = function (func, errorMsg, errorFunc, nextFunc) {
-        return func.bind(null,
-            function (err) {
-                console.error(errorMsg, err);
-                errorFunc(err);
-            },
-            nextFunc);
+    function stringToBytes(str) {
+        var chars = [];
+        for (var i = 0; i < str.length; ++i) {
+            chars.push(str.charCodeAt(i));
+        }
+        return new Uint8Array(chars);
+    }
+
+    var _sym = {
+        generateKeyAES: function (onError, onSuccess) {                   
+            wrap(window.crypto.subtle.generateKey(
+                    { name: config.aesCipher, length: config.aesLength },
+                    true,
+                    ["encrypt", "decrypt"]
+                ),
+                onError,
+                function (aesKey) {
+                    onSuccess(aesKey);
+                }
+            );
+        },
+
+        generateKeyHMAC: function (onError, onSuccess) {
+            wrap(window.crypto.subtle.generateKey(
+                    config.hmacOptions,
+                    true,
+                    ["sign", "verify"]
+                ),
+                onError,
+                function (hmacKey) {
+                    onSuccess(hmacKey);
+                }
+            );
+        },
+
+        importKeyAES: function (key, onError, onSuccess) {     
+            wrap(window.crypto.subtle.importKey(
+                    "raw",
+                    key,
+                    { name: config.aesCipher },
+                    false,
+                    ["encrypt", "decrypt"]),
+                onError,
+                function (keyObj) {
+                    onSuccess(keyObj);
+                }
+            );               
+        },
+        importKeyHMAC: function(key, onError, onSuccess) {
+            wrap(window.crypto.subtle.importKey(
+                    "raw",
+                    key,
+                    config.hmacOptions,
+                    false,
+                    ["sign", "verify"]),
+                onError,
+                function (keyObj) {
+                    onSuccess(keyObj);
+                }
+            );
+        },
+                
+        exportKey: function (key, onError, onSuccess) {
+            wrap(window.crypto.subtle.exportKey("raw", key),
+                onError,
+                function (key) {
+                    onSuccess(key);
+                }
+            );
+        },
+        
+        encrypt: function(key, iv, data, onError, onSuccess) {
+            wrap(window.crypto.subtle.encrypt(
+                    { name: config.aesCipher, iv: iv },
+                    key,
+                    data
+                ),
+                onError,
+                function (encrypted) {
+                    var cipherdata = combineBuffers(iv, encrypted);
+                    onSuccess(cipherdata);
+                }
+            );
+        },
+
+        decryptAES: function (key, cipherdata, onError, onSuccess) {
+            var iv = new Uint8Array(cipherdata, 0, 16);
+            var encrypted = new Uint8Array(cipherdata, 16);
+
+            wrap(window.crypto.subtle.decrypt(
+                    { name: config.aesCipher, iv: iv },
+                    key,
+                    encrypted
+                ),
+                onError,
+                onSuccess
+            );
+        },
+
+        signHMAC: function(key, data, onError, onSuccess) {
+            wrap(window.crypto.subtle.sign(
+                    config.hmacOptions,
+                    key,
+                    data
+                ),
+                onError,
+                function (hmac) {
+                    onSuccess(hmac);
+                }
+            );
+        }, 
+
+        verifyHMAC: function (key, hmac, cipherdata, onError, onSuccess) {
+            wrap(window.crypto.subtle.verify(
+                    config.hmacOptions,
+                    key,
+                    hmac,
+                    cipherdata),
+                 onError,
+                 function (isValid) {
+                     if (!isValid) {
+                         onError("Invalid HMAC");
+                     }
+                     else {
+                         onSuccess();
+                     }
+                 }
+            );
+        },
     };
-
 
     var _asym = {
         generateEncryptKeys: function(onError, onSuccess) {
@@ -62,7 +197,7 @@
                         name: config.rsaEncryptCipher,
                         modulusLength: config.rsaLength,
                         publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-                        hash: { name: config.rsaHash }
+                        hash: { name: config.rsaEncryptHash }
                     },
                     true,
                     ["encrypt", "decrypt"]
@@ -77,7 +212,7 @@
                         name: config.rsaSignCipher,
                         modulusLength: config.rsaLength,
                         publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-                        hash: { name: config.rsaHash }
+                        hash: { name: config.rsaSignHash }
                     },
                     true,
                     ["sign", "verify"]
@@ -88,10 +223,15 @@
         },
         
         importEncryptPrivateKey: function(jwk, onError, onSuccess) {
+            
+            if(oldSubtle) {
+                jwk = stringToBytes(JSON.stringify(jwk));
+            }
+            
             wrap(window.crypto.subtle.importKey(
                     "jwk",
                     jwk,
-                    { name: config.rsaEncryptCipher, hash: { name: config.rsaHash } },
+                    { name: config.rsaEncryptCipher, hash: {name: config.rsaEncryptHash } },
                     false,
                     ["decrypt"] 
                 ), onError,
@@ -101,10 +241,13 @@
             );  
         },
         importSignPrivateKey: function (jwk, onError, onSuccess) {
+            if(oldSubtle) {
+                jwk = stringToBytes(JSON.stringify(jwk));
+            }
             wrap(window.crypto.subtle.importKey(
                     "jwk",
                     jwk,
-                    { name: config.rsaSignCipher, hash: { name: config.rsaHash } },
+                    { name: config.rsaSignCipher, hash: { name: config.rsaSignHash } },
                     false,
                     ["sign"]
                 ), onError,
@@ -112,21 +255,32 @@
                     onSuccess(privateKey);
                 }
             );
-        },        
+        }, 
         exportKey: function(key, onError, onSuccess) {
             wrap(window.crypto.subtle.exportKey(
                     "jwk",
                     key
                 ), onError,
                 function (jwk) {
-                    onSuccess(jwk);
+                    if (oldSubtle) {
+                        try {
+                            var fixedJwk = JSON.parse(bytesToString(jwk));
+                            onSuccess(fixedJwk);
+                        }
+                        catch(e) {
+                            onError(e.message, e);
+                            return;
+                        }
+                    }
+                    else {
+                        onSuccess(jwk);
+                    }
                 }
             );
         },
-        
-        sign: function (data, key, onError, onSuccess) {
+        sign: function (key, data, onError, onSuccess) {
             wrap(window.crypto.subtle.sign(
-                    { name: config.rsaSignCipher, hash: config.rsaHash },
+                    { name: config.rsaSignCipher, hash: config.rsaSignHash },
                     key, 
                     data
                 ),
@@ -139,7 +293,7 @@
 
         verifySignature: function(key, signature, data, onError, onSuccess) {
             wrap(window.crypto.subtle.verify(
-                    { name: config.rsaSignCipher, hash: config.rsaHash },
+                    { name: config.rsaSignCipher, hash: config.rsaSignHash },
                     key,
                     signature,
                     data
@@ -157,7 +311,7 @@
         
         encrypt: function (publicKey, data, onError, onSuccess) {
             wrap(window.crypto.subtle.encrypt(
-                    { name: config.rsaEncryptCipher, hash: config.rsaHash },
+                    { name: config.rsaEncryptCipher, hash: config.rsaEncryptHash },
                     publicKey,
                     data
                 ),
@@ -170,7 +324,7 @@
         
         decrypt: function(privateKey, data, onError, onSuccess) {
              wrap(window.crypto.subtle.decrypt(
-                    { name: config.rsaEncryptCipher, hash: config.rsaHash },
+                    { name: config.rsaEncryptCipher, hash: config.rsaEncryptHash },
                     privateKey,
                     data
              ),
@@ -192,13 +346,24 @@
             var split = config.aesLength / 8;
             var aesKey = new Uint8Array(combinedkeys, 0, split);
             var hmacKey = new Uint8Array(combinedkeys, split);
-            simpleCrypto.sym.decrypt(data, {aesKey: aesKey, hmacKey: hmacKey}, onError, onSuccess);
+            simpleCrypto.sym.decrypt({aesKey: aesKey, hmacKey: hmacKey}, data, onError, onSuccess);
         }
     }
 
 
     var simpleCrypto = {
 
+        storage: {
+            get: function(keyId, onError, onSuccess) {
+                dbUtil.get(keyId, onError, onSuccess);    
+            },
+            put: function(keyId, key, onError, onSuccess) {
+                dbUtil.put(keyId, key, onError, onSuccess);    
+            },
+            delete: function(keyId, onError, onSuccess) {
+                dbUtil.delete(keyId, onError, onSuccess);
+            }
+        },
         asym : {
             
             generateKeys: function(onError, onSuccess) {
@@ -216,7 +381,7 @@
                   _asym.exportKey(keys.privateKey, onError.bind(null, "Could not export private encrypt key"), function(privateJwk){
                    _asym.importEncryptPrivateKey(privateJwk, onError.bind(null, "Could not import private encrypt key"), function(privateKey) {
 
-                     onSuccess({privateKey: privateKey, publicKey: keys.publicKey, 
+                     onSuccess({privateKey: privateKey, privateKey2:keys.privateKey, publicKey: keys.publicKey, 
                                 privateJwk: privateJwk, publicJwk: publicJwk});
 
                    });    
@@ -281,9 +446,9 @@
                 // encrypt keys
                 // sign encrypted keys
                 _asym.aesEncrypt(data, onError.bind(null, "Could not encrypt data"), function(combinedKeys, encrypted){
-                 _asym.sign(combinedKeys, signKey, onError.bind(null, "Could not sign AES keys"), function(keysSignature) {
+                 _asym.sign(signKey, combinedKeys, onError.bind(null, "Could not sign AES keys"), function(keysSignature) {
                   _asym.encrypt(encryptKey, combinedKeys, onError.bind("Could not encrypt AES keys"), function(encryptedKeys) {
-                   _asym.sign(encryptedKeys, signKey, onError.bind(null, "Could not sign encrypted AES keys"), function(encryptedKeysSignature) {
+                   _asym.sign(signKey, encryptedKeys, onError.bind(null, "Could not sign encrypted AES keys"), function(encryptedKeysSignature) {
                     onSuccess({
                         // symmetric encryption output 
                         data: encrypted,
@@ -303,65 +468,15 @@
         sym: {
             
             generateKeys: function(onError, onSuccess) {
-                var result = {};
 
-                var generateKeyAES = function (_onError, _onSuccess) {                   
-                    wrap(window.crypto.subtle.generateKey(
-                            { name: config.aesCipher, length: config.aesLength },
-                            true,
-                            ["encrypt", "decrypt"]
-                        ),
-                        _onError,
-                        function (aesKey) {
-                            result["aesKeyObj"] = aesKey;
-                            _onSuccess();
-                        }
-                    );
-                };
-
-                var generateKeyHMAC = function (_onError, _onSuccess) {
-                    wrap(window.crypto.subtle.generateKey(
-                            config.hmacOptions,
-                            true,
-                            ["sign", "verify"]
-                        ),
-                        _onError,
-                        function (hmacKey) {
-                            result["hmacKeyObj"] = hmacKey;
-                            _onSuccess();
-                        }
-                    );
-                };
-                
-                
-                var exportKeyAES = function (_onError, _onSuccess) {
-                    wrap(window.crypto.subtle.exportKey("raw", result.aesKeyObj),
-                        _onError,
-                        function (aesKey) {
-                            result["aesKey"] = aesKey;
-                            _onSuccess();
-                        }
-                    );
-                };
-
-                var exportKeyHMAC = function (_onError, _onSuccess) {
-                    wrap(window.crypto.subtle.exportKey("raw", result.hmacKeyObj),
-                        _onError,
-                        function (hmacKey) {
-                            result["hmacKey"] = hmacKey;
-                            _onSuccess();
-                        }
-                    );
-                };
-                
-                next(generateKeyAES, "Could not generate AES key", onError,
-                next(generateKeyHMAC, "Could not generate HMAC key", onError,
-                next(exportKeyAES, "Could not export AES key", onError, 
-                next(exportKeyHMAC, "Could not export HMAC key", onError,
-                    function () {
-                        onSuccess(result);
-                    }
-                ))))();
+                // generate random AES and HMAC keys
+                // export them in RAW format
+                _sym.generateKeyAES(onError.bind(null, "Could not generate AES key"), function(aesKeyObj){
+                 _sym.generateKeyHMAC(onError.bind(null, "Could not generate HMAC key"), function(hmacKeyObj){
+                  _sym.exportKey(aesKeyObj, onError.bind(null, "Could not export AES key"), function(aesKey) {
+                   _sym.exportKey(hmacKeyObj, onError.bind(null, "Could not export HMAC key"), function(hmacKey) {
+                       onSuccess({aesKeyObj: aesKeyObj, hmacKeyObj: hmacKeyObj, aesKey: aesKey, hmacKey: hmacKey});    
+                   }); }); }); });
             },
             
             importKeys: function(keys, onError, onSuccess) {
@@ -376,59 +491,24 @@
                     return;
                 }
                 
-                var importKeyAES = function (_onError, _onSuccess) {     
-                    wrap(window.crypto.subtle.importKey(
-                            "raw",
-                            keys.aesKey,
-                            { name: config.aesCipher },
-                            false,
-                            ["encrypt", "decrypt"]),
-                        _onError,
-                        function (aesKeyObj) {
-                            keys["aesKeyObj"] = aesKeyObj;
-                            _onSuccess();
-                        }
-                    );               
-                };
-                var importKeyHMAC = function(_onError, _onSuccess) {
-                    wrap(window.crypto.subtle.importKey(
-                            "raw",
-                            keys.hmacKey,
-                            config.hmacOptions,
-                            false,
-                            ["sign", "verify"]),
-                        _onError,
-                        function (hmacKeyObj) {
-                            keys["hmacKeyObj"] = hmacKeyObj;
-                            _onSuccess();
-                        }
-                    );
-                };
-                
-                next(importKeyAES, "Could not import AES key", onError, 
-                next(importKeyHMAC, "Could not import HMAC key", onError,
-                    function () {
+                _sym.importKeyAES(keys.aesKey, onError.bind(null, "Could not import AES key"), function(aesKeyObj) {
+                    keys["aesKeyObj"] = aesKeyObj;
+                    _sym.importKeyHMAC(keys.hmacKey, onError.bind(null, "Could not import HMAC key"), function(hmacKeyObj) {
+                        keys["hmacKeyObj"] = hmacKeyObj;
                         onSuccess();
-                    }
-                ))();
-                
+                    });
+                });
             },
             
             genKeysAndEncrypt: function(data, onError, onSuccess) {
                 simpleCrypto.sym.generateKeys(onError, function(keys) {
-                    simpleCrypto.sym.encrypt(data, keys, onError, onSuccess);
+                    simpleCrypto.sym.encrypt(keys, data, onError, onSuccess);
                 });
             },
             
-            encrypt: function (data, keys, onError, onSuccess) {
+            encrypt: function (keys, data, onError, onSuccess) {
 
-                var result = {};
-                
-                var getKeys = function (_onError, _onSuccess) { 
-                   simpleCrypto.sym.importKeys(keys, _onError, _onSuccess);
-                };
-
-                var encryptAES = function (_onError, _onSuccess) {
+                simpleCrypto.sym.importKeys(keys, onError.bind(null, "Could not get keys"), function() {
                     var iv;
                     if ("iv" in keys) {
                         iv = keys.iv; 
@@ -436,93 +516,25 @@
                     else {
                         iv = window.crypto.getRandomValues(new Uint8Array(config.aesIvLength));
                     }
-                    wrap(window.crypto.subtle.encrypt(
-                            { name: config.aesCipher, iv: iv },
-                            keys.aesKeyObj,
-                            data
-                        ),
-                        _onError,
-                        function (encrypted) {
-                            var combined = combineBuffers(iv, encrypted);
-                            result["cipherdata"] = combined;
-                            _onSuccess();
-                        }
-                    );
-                };
-
-                var signHMAC = function (_onError, _onSuccess) {
-                    wrap(window.crypto.subtle.sign(
-                            config.hmacOptions,
-                            keys.hmacKeyObj,
-                            result.cipherdata
-                        ),
-                        _onError,
-                        function (hmac) {
-                            result["hmac"] = hmac;
-                            _onSuccess();
-                        }
-                    );
-                };
-
-
-                next(getKeys, "Could not get keys", onError,
-                next(encryptAES, "Could not AES Encrypt", onError,
-                next(signHMAC, "Could not HMAC sign", onError,
-                    function () {
-                        var data = { cipherdata: result.cipherdata, hmac: result.hmac };
-                        onSuccess({ keys: keys, data: data });
-                    }
-                )))();
-
+                    _sym.encrypt(keys.aesKeyObj, iv, data, onError.bind(null, "Could not AES Encrypt"), function(cipherdata){
+                        _sym.signHMAC(keys.hmacKeyObj, cipherdata, onError.bind(null, "Could not HMAC sign"), function(hmac) {
+                            var data = { cipherdata: cipherdata, hmac: hmac };
+                            onSuccess({ keys: keys, data: data });                           
+                        });  
+                    });
+                });
             },
 
-
-            decrypt: function (data, keys, onError, onSuccess) {
-     
-                var getKeys = function (_onError, _onSuccess) {
-                    simpleCrypto.sym.importKeys(keys, _onError, _onSuccess);
-                };
-                
-                var verifyHMAC = function (_onError, _onSuccess) {
-                    wrap(window.crypto.subtle.verify(
-                            config.hmacOptions,
-                            keys.hmacKeyObj,
-                            data.hmac,
-                            data.cipherdata),
-                         _onError,
-                         function (isValid) {
-                             if (!isValid) {
-                                 _onError();
-                             }
-                             else {
-                                 _onSuccess();
-                             }
-                         }
-                    );
-                };
-
-                var decryptAES = function (_onError, _onSuccess) {
-                    var iv = new Uint8Array(data.cipherdata, 0, 16);
-                    var encrypted = new Uint8Array(data.cipherdata, 16);
-
-                    wrap(window.crypto.subtle.decrypt(
-                            { name: config.aesCipher, iv: iv },
-                            keys.aesKeyObj,
-                            encrypted
-                        ),
-                        _onError,
-                        _onSuccess
-                    );
-                };
-
-                next(getKeys, "Could not get keys", onError,
-                next(verifyHMAC, "Could not verify HMAC key", onError,
-                next(decryptAES, "Could not AES decrypt", onError,
-                    function (decrypted) {
-                        onSuccess(decrypted);
-                    }
-                )))();
+            decrypt: function (keys, data, onError, onSuccess) {
+                simpleCrypto.sym.importKeys(keys, onError, function(){
+                    _sym.verifyHMAC(keys.hmacKeyObj, data.hmac, data.cipherdata, onError.bind(null, "Could not verify HMAC"), function(){
+                        _sym.decryptAES(keys.aesKeyObj, data.cipherdata, onError.bind(null, "Could not AES decrypt"), function(data) {
+                            onSuccess(data);
+                        });
+                    });    
+                });
             }
+            
         }
     };
     var dbUtil = {
@@ -551,7 +563,7 @@
                 onError("Error opening DB", event);
             };
         },   
-        store: function(key, value, onError, onSuccess) {
+        put: function(key, value, onError, onSuccess) {
             this._openDB(onError, onSuccess, function(db, closeDB) {
                 var request = db.transaction(["keys"], "readwrite").objectStore("keys").put(value, key);
                 request.onsuccess = function(){
@@ -564,9 +576,22 @@
                 };
             });
         },
-        fetch: function(key, onError, onSuccess) {
+        get: function(key, onError, onSuccess) {
             this._openDB(onError, onSuccess, function(db, closeDB) {
                 var request = db.transaction(["keys"], "readonly").objectStore("keys").get(key);
+                request.onsuccess = function(){
+                    closeDB();
+                    onSuccess(request.result);
+                };
+                request.onerror = function(event) {
+                    closeDB();
+                    onError("Error storing value", event);
+                };
+            });
+        },
+        delete: function(key, onError, onSuccess) {
+            this._openDB(onError, onSuccess, function(db, closeDB) {
+                var request = db.transaction(["keys"], "readwrite").objectStore("keys").delete(key);
                 request.onsuccess = function(){
                     closeDB();
                     onSuccess(request.result);

@@ -4,7 +4,7 @@
   "description": "Simple Crypto wrapper for WebCrypto",
   "main": "simplecrypto.js",
   "scripts": {
-    "test": "karma start karma.conf-ci.js",
+    "test": "karma start karma.conf-ci.js"
   },
   "author": "Encryb",
   "license": "Apache V2",
@@ -14,6 +14,7 @@
     "karma-jasmine": "^0.2.2",
     "karma-chrome-launcher": "^0.1.2",
     "karma-firefox-launcher": "^0.1.3",
-    "karma-safari-launcher": "^0.1.1"
+    "karma-safari-launcher": "^0.1.1",
+    "karma-ie-launcher": "^0.2.0"
   }
 }

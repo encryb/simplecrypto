@@ -1,6 +1,6 @@
+
 function logError(callback, error) {
-    console.log("EEEEEEEEEEERRRRRRRRRRRRRRROOOOOOOOOOOOOOOOOOOORRRRRRRRRRRRRRRRRRRRRR");
-    console.error(error.message);
+    console.log(arguments);
     callback();
 }
 
@@ -13,8 +13,11 @@ function isSame(arr1, arr2) {
     )
 }
 
+beforeEach(function() {
+  jasmine.DEFAULT_TIMEOUT_INTERVAL = 15000;
+});
 
-
+/*
 describe('symmetric', function() {
 
     var testArray = new Uint8Array([1,2,3]);
@@ -23,7 +26,7 @@ describe('symmetric', function() {
 
     beforeEach(function (done) {
         simpleCrypto.sym.genKeysAndEncrypt(testArray, logError.bind(null, done), function(encrypted) {
-           simpleCrypto.sym.decrypt(encrypted.data, encrypted.keys, logError.bind(null, done), function(decrypted) {
+           simpleCrypto.sym.decrypt(encrypted.keys, encrypted.data, logError.bind(null, done), function(decrypted) {
               result = decrypted;
               done(); 
            });
@@ -49,8 +52,8 @@ describe('symmetricWithKeys', function() {
 
 
     beforeEach(function (done) {
-        simpleCrypto.sym.encrypt(testArray, {aesKey: aesKey, hmacKey: hmacKey}, logError.bind(null, done), function(encrypted) {
-           simpleCrypto.sym.decrypt(encrypted.data, encrypted.keys, logError.bind(null, done), function(decrypted) {
+        simpleCrypto.sym.encrypt({aesKey: aesKey, hmacKey: hmacKey}, testArray, logError.bind(null, done), function(encrypted) {
+           simpleCrypto.sym.decrypt(encrypted.keys, encrypted.data, logError.bind(null, done), function(decrypted) {
               result = decrypted;
               done(); 
            });
@@ -63,26 +66,77 @@ describe('symmetricWithKeys', function() {
     });
 });
 
+*/
 
 describe('asymmetric', function() {
-
     var testArray = new Uint8Array([1,2,3]);
     var wrongArray = new Uint8Array([2,3,4]);
     var result;
+    var gKeys, gEncrypted, gPrivateKey;
     
-    beforeEach(function (done) {
-        simpleCrypto.asym.generateKeys(logError.bind(null, done), function(keys){
-            simpleCrypto.asym.encryptAndSign(keys.encrypt.publicKey, keys.sign.privateKey, testArray, logError.bind(null, done), function(encrypted) {
-                simpleCrypto.asym.verifyAndDecrypt(keys.encrypt.privateKey, keys.sign.publicKey, encrypted, logError.bind(null, done), function(decrypted){
-                    result = decrypted;
-                    done();
-                });
-            });
+    it('generate keys', function(done) {
+        simpleCrypto.asym.generateEncryptKey(logError.bind(null, done), function(keys){
+            expect(keys).not.toBeUndefined();
+            gKeys = keys;
+            done();
         });
     });
-    it('encrypt and decrypt', function() {
-        expect(result).not.toBeUndefined();
-        expect(new Uint8Array(result)).toEqual(testArray);
-        expect(new Uint8Array(result)).not.toEqual(wrongArray);
+    it('store keys', function(done) {
+        simpleCrypto.db.put("privateKey", gKeys.privateKey, logError.bind(null, done), function(){
+            done();
+        });
+    });
+    it('load keys', function(done) {
+        simpleCrypto.db.get("privateKey", logError.bind(null, done), function(privateKey){
+            gPrivateKey = privateKey;
+            done();
+        });
+    });
+    
+    it('encrypt', function(done) {
+        simpleCrypto.asym.encrypt(gKeys.publicKey, testArray, logError.bind(null, done), function(encrypted) {
+            expect(encrypted).not.toBeUndefined();
+            gEncrypted = encrypted;
+            done();
+        });
+    });
+    it('decrypt', function(done) {
+        simpleCrypto.asym.decrypt(gPrivateKey, gEncrypted, logError.bind(null, done), function(decrypted){
+            expect(decrypted).not.toBeUndefined();
+            console.log(new Uint8Array(decrypted));
+            expect(new Uint8Array(decrypted)).toEqual(testArray);
+            done();
+        });
+    });
+});
+
+
+describe('asymmetricWithSign', function() {
+    var testArray = new Uint8Array([1,2,3]);
+    var wrongArray = new Uint8Array([2,3,4]);
+    var result;
+    var gKeys, gEncrypted;
+    
+    it('generate keys', function(done) {
+        simpleCrypto.asym.generateKeys(logError.bind(null, done), function(keys){
+            expect(keys).not.toBeUndefined();
+            gKeys = keys;
+            done();
+        });
+    });
+    it('encrypt and sign', function(done) {
+        simpleCrypto.asym.encryptAndSign(gKeys.encrypt.publicKey, gKeys.sign.privateKey, testArray, logError.bind(null, done), function(encrypted) {
+            expect(encrypted).not.toBeUndefined();
+            gEncrypted = encrypted;
+            done();
+        });
+    });
+    it('verify and decrypt', function(done) {
+        simpleCrypto.asym.verifyAndDecrypt(gKeys.encrypt.privateKey, gKeys.sign.publicKey, gEncrypted, logError.bind(null, done), function(decrypted){
+            expect(decrypted).not.toBeUndefined();
+            console.log(new Uint8Array(decrypted));
+            expect(new Uint8Array(decrypted)).toEqual(testArray);
+            done();
+        });
     });
 });
