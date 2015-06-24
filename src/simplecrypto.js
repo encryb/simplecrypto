@@ -408,7 +408,7 @@
 
             decrypt: function (decryptKey, dict, onError, onSuccess) {
                 _asym.decrypt(decryptKey, dict.encryptedKeys, onError.bind(null, "Could not decrypt keys"), function(combinedKeys){
-                    _asym.aesDecrypt(combinedKeys, dict.data, onError, onSuccess);
+                    _asym.aesDecrypt(combinedKeys, { cipherdata: dict.cipherdata, hmac: dict.hmac }, onError, onSuccess);
                 });
             },
 
@@ -421,7 +421,7 @@
                 _asym.verifySignature(verifyKey, dict.encryptedKeysSignature, dict.encryptedKeys, onError.bind(null, "Could not verify encrypted keys"), function(){
                  _asym.decrypt(decryptKey, dict.encryptedKeys, onError.bind(null, "Could not decrypt keys"), function(combinedKeys){
                   _asym.verifySignature(verifyKey, dict.keysSignature, combinedKeys, onError.bind(null, "Could not verify keys"), function(){
-                   _asym.aesDecrypt(combinedKeys, dict.data, onError, onSuccess);
+                   _asym.aesDecrypt(combinedKeys, { cipherdata: dict.cipherdata, hmac: dict.hmac }, onError, onSuccess);
                    });
                  });
                 });
@@ -432,7 +432,7 @@
                  _asym.encrypt(encryptKey, combinedKeys, onError.bind("Could not encrypt AES keys"), function(encryptedKeys) {
                   onSuccess({
                     // symmetric encryption output 
-                    data: encrypted,
+                    cipherdata: encrypted.cipherdata, hmac: encrypted.hmac,
                     // encrypted symmetric encryption keys 
                     encryptedKeys: encryptedKeys,
                   });         
@@ -451,7 +451,7 @@
                    _asym.sign(signKey, encryptedKeys, onError.bind(null, "Could not sign encrypted AES keys"), function(encryptedKeysSignature) {
                     onSuccess({
                         // symmetric encryption output 
-                        data: encrypted,
+                        cipherdata: encrypted.cipherdata, hmac: encrypted.hmac,
                         // encrypted symmetric encryption keys 
                         encryptedKeys: encryptedKeys,
                         // signatures of plain and encryped symmetric encryption keys
@@ -537,6 +537,79 @@
             
         }
     };
+
+    var encoding = {
+            
+        VERSION: 1,
+        
+        LABEL_TO_INDEX: {
+                    // symmetric
+                    cipherdata : 0, hmac: 1,
+                    // asymmetric
+                    encryptedKeys: 100, keysSignature: 101, encryptedKeysSignature: 102
+        },
+        INDEX_TO_LABEL: {
+                    0: "cipherdata", 1: "hmac",
+                     100: "encryptedKeys",  101: "keysSignature", 102: "encryptedKeysSignature"
+        },
+    
+     
+        encode: function(dict) {
+    
+            var size = 1;
+            var numItems = 0;
+            for (var label in dict) {
+                if (!(label in this.LABEL_TO_INDEX)) {
+                    throw "Unsupported key: " + label;
+                }
+                size += 5; //1 byte for key, 4 bytes for size
+                size += dict[label].byteLength;
+                numItems ++;
+            }
+    
+            var buffer = new ArrayBuffer(size);
+            var view = new DataView(buffer);
+            var offset = 0;
+            view.setUint8(offset, this.VERSION);
+            offset++;
+    
+            for (var label in dict) {
+                
+                var index = this.LABEL_TO_INDEX[label]
+                view.setUint8(offset, index);
+                var data = dict[label];
+                view.setUint32(offset + 1, data.byteLength);
+                (new Uint8Array(view.buffer)).set(data, offset + 5);
+                offset += 5 + data.byteLength;
+            }
+            return buffer;
+        },
+    
+        decode: function(buffer) {
+            var dict = {};
+    
+            var view = new DataView(buffer);
+            var offset = 0;
+            var version = view.getUint8(offset);
+            offset++;
+            while (offset < buffer.byteLength) {
+                var index = view.getUint8(offset);
+                var label = this.INDEX_TO_LABEL[index];
+                var size = view.getUint32(offset + 1);
+                
+                // make sure we don't over allocate
+                if (size > (buffer.byteLength - offset + 5)) {
+                    throw "Incorrect size " + size + buffer.byteLength;
+                }
+                var data = new Uint8Array(view.buffer, offset + 5 , size);
+                offset += 5 + data.length;
+    
+                dict[label] = data;
+            }
+            return dict;
+        }
+    }
+    
     var dbUtil = {
         _version: 1,
         _openDB: function(onError, onSuccess, func) {
@@ -604,6 +677,7 @@
         }
     }
     simpleCrypto.db = dbUtil;
+    simpleCrypto.encoding = encoding;
     
     return simpleCrypto;
 }));

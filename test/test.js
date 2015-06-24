@@ -17,7 +17,7 @@ beforeEach(function() {
   jasmine.DEFAULT_TIMEOUT_INTERVAL = 15000;
 });
 
-/*
+
 describe('symmetric', function() {
 
     var testArray = new Uint8Array([1,2,3]);
@@ -65,8 +65,6 @@ describe('symmetricWithKeys', function() {
         expect(new Uint8Array(result)).not.toEqual(wrongArray);
     });
 });
-
-*/
 
 describe('asymmetric', function() {
     var testArray = new Uint8Array([1,2,3]);
@@ -139,4 +137,26 @@ describe('asymmetricWithSign', function() {
             done();
         });
     });
+});
+
+
+describe('pack', function() {
+    var emptyBuffer = new Uint8Array(32).buffer;
+    var gEnc;
+    it('encode', function(done) {        
+        var dict = { cipherdata: emptyBuffer, hmac: emptyBuffer, encryptedKeys: emptyBuffer, 
+            keysSignature: emptyBuffer, encryptedKeysSignature: emptyBuffer };
+        gEnc = simpleCrypto.encoding.encode(dict);
+        done();
+    });
+    it('decode', function(done) {
+        var dict = simpleCrypto.encoding.decode(gEnc);
+        expect(new Uint8Array(emptyBuffer)).toEqual(new Uint8Array(dict.cipherdata));
+        expect(new Uint8Array(emptyBuffer)).toEqual(new Uint8Array(dict.hmac));
+        expect(new Uint8Array(emptyBuffer)).toEqual(new Uint8Array(dict.encryptedKeys));
+        expect(new Uint8Array(emptyBuffer)).toEqual(new Uint8Array(dict.keysSignature));
+        expect(new Uint8Array(emptyBuffer)).toEqual(new Uint8Array(dict.encryptedKeysSignature));
+        done();
+    });
+
 });
