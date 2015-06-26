@@ -7,12 +7,13 @@
         root.simpleCrypto = factory();
     }
 }(this, function () {
-    var oldSubtle = false;
+    var oldWebkit = false;
+    var oldIE = false;
     if (window.crypto && window.crypto.webkitSubtle && window.crypto.subtle === undefined){
-        oldSubtle = true;
+        oldWebkit = true;
     }
     if (window.msCrypto && (window.crypto === undefined || window.crypto.subtle === undefined)){
-        oldSubtle = true;
+        oldIE = true;
     }
     
     window.crypto = window.crypto || window.msCrypto;
@@ -25,10 +26,14 @@
         aesIvLength: 16,
         hmacOptions: {
             name: "HMAC",
-            hash: { name: "SHA-256" }
+            hash: { name: "SHA-256" },
+            // old webkit stores length in bytes, everything else in bits
+            length: oldWebkit ? 32 : 256
         },
-
+        
         rsaLength: 2048,
+        // (rsaLength / 8) - 2 - (2 * hash length)
+        rsaEncryptMax: 214,
         
         rsaEncryptCipher: "RSA-OAEP",
         rsaEncryptHash: "SHA-1",
@@ -145,9 +150,18 @@
         },
 
         decryptAES: function (key, cipherdata, onError, onSuccess) {
-            var iv = new Uint8Array(cipherdata, 0, 16);
-            var encrypted = new Uint8Array(cipherdata, 16);
-
+            var iv, encrypted;
+            if (cipherdata instanceof Uint8Array) {
+                var offset = cipherdata.byteOffset;
+                var length = cipherdata.length;
+                iv = new Uint8Array(cipherdata.buffer, offset, 16);
+                encrypted = new Uint8Array(cipherdata.buffer, offset + 16, length-16);
+            }
+            else {
+                iv = new Uint8Array(cipherdata, 0, 16);
+                encrypted = new Uint8Array(cipherdata, 16);
+            }
+            
             wrap(window.crypto.subtle.decrypt(
                     { name: config.aesCipher, iv: iv },
                     key,
@@ -224,7 +238,7 @@
         
         importEncryptPrivateKey: function(jwk, onError, onSuccess) {
             
-            if(oldSubtle) {
+            if(oldWebkit || oldIE) {
                 jwk = stringToBytes(JSON.stringify(jwk));
             }
             
@@ -241,7 +255,7 @@
             );  
         },
         importSignPrivateKey: function (jwk, onError, onSuccess) {
-            if(oldSubtle) {
+            if(oldWebkit || oldIE) {
                 jwk = stringToBytes(JSON.stringify(jwk));
             }
             wrap(window.crypto.subtle.importKey(
@@ -262,7 +276,7 @@
                     key
                 ), onError,
                 function (jwk) {
-                    if (oldSubtle) {
+                    if (oldWebkit || oldIE) {
                         try {
                             var fixedJwk = JSON.parse(bytesToString(jwk));
                             onSuccess(fixedJwk);
@@ -342,10 +356,32 @@
         },
         
         aesDecrypt: function(combinedkeys, data, onError, onSuccess) {
-            // todo, check sizes              
-            var split = config.aesLength / 8;
-            var aesKey = new Uint8Array(combinedkeys, 0, split);
-            var hmacKey = new Uint8Array(combinedkeys, split);
+            var aesKey, hmacKey, length;
+            
+            var aesLength = config.aesLength / 8;
+            // old webkit stores length in bytes, everything else in bits
+            var hmacLength = oldWebkit ? config.hmacOptions.length : (config.hmacOptions.length / 8);
+            
+            if (combinedkeys instanceof Uint8Array) {
+                var offset = combinedkeys.byteOffset;
+                length = combinedkeys.length;
+                if (length != (aesLength + hmacLength)) {
+                    onError("Combined keys size is incorrect", length, aesLength, hmacLength);
+                    return;
+                }
+                aesKey = new Uint8Array(combinedkeys.buffer, offset, aesLength);
+                hmacKey = new Uint8Array(combinedkeys.buffer, offset + aesLength, hmacLength);
+            }
+            else if (combinedkeys instanceof ArrayBuffer) {
+                length = combinedkeys.byteLength;
+                if (length != (aesLength + hmacLength)) {
+                    onError("Combined keys size is incorrect", length, aesLength, hmacLength);
+                    return;
+                }
+                aesKey = new Uint8Array(combinedkeys, 0, aesLength);
+                hmacKey = new Uint8Array(combinedkeys, aesLength);
+            }
+                
             simpleCrypto.sym.decrypt({aesKey: aesKey, hmacKey: hmacKey}, data, onError, onSuccess);
         }
     }
@@ -407,61 +443,79 @@
             },
 
             decrypt: function (decryptKey, dict, onError, onSuccess) {
-                _asym.decrypt(decryptKey, dict.encryptedKeys, onError.bind(null, "Could not decrypt keys"), function(combinedKeys){
-                    _asym.aesDecrypt(combinedKeys, { cipherdata: dict.cipherdata, hmac: dict.hmac }, onError, onSuccess);
-                });
+                if (dict.aesEncrypted) {
+                    _asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, "Could not decrypt keys"), function(combinedKeys){
+                        _asym.aesDecrypt(combinedKeys, { aesEncrypted: dict.aesEncrypted, hmac: dict.hmac }, onError, onSuccess);
+                    });
+                }
+                else {
+                    _asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, "Could not RSA decrypt"), onSuccess);
+                }
             },
 
 
             verifyAndDecrypt: function (decryptKey, verifyKey, dict, onError, onSuccess) {
-                // verify signature of encrypted keys
-                // decrypt keys
-                // verify signature of decrypted keys
-                // decrypt data 
-                _asym.verifySignature(verifyKey, dict.encryptedKeysSignature, dict.encryptedKeys, onError.bind(null, "Could not verify encrypted keys"), function(){
-                 _asym.decrypt(decryptKey, dict.encryptedKeys, onError.bind(null, "Could not decrypt keys"), function(combinedKeys){
-                  _asym.verifySignature(verifyKey, dict.keysSignature, combinedKeys, onError.bind(null, "Could not verify keys"), function(){
-                   _asym.aesDecrypt(combinedKeys, { cipherdata: dict.cipherdata, hmac: dict.hmac }, onError, onSuccess);
-                   });
-                 });
+                // verify signature of encrypted rsa data
+                // decrypt rsa data
+                // verify signature of decrypted rsa data
+                // decrypt aes data if required
+                _asym.verifySignature(verifyKey, dict.signatureOfEncrypted, dict.rsaEncrypted, onError.bind(null, "Could not verify encrypted keys"), function(){
+                    _asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, "Could not decrypt keys"), function(decrypted){
+                        _asym.verifySignature(verifyKey, dict.signatureOfData, decrypted, onError.bind(null, "Could not verify keys"), function(){
+                            if (dict.aesEncrypted) {
+                                _asym.aesDecrypt(decrypted, { aesEncrypted: dict.aesEncrypted, hmac: dict.hmac }, onError, onSuccess);
+                            }
+                            else {
+                                onSuccess(decrypted);
+                            }
+                        });
+                    });
                 });
             },
             
-            encrypt: function(encryptKey, data, onError, onSuccess) {
-                _asym.aesEncrypt(data, onError.bind(null, "Could not encrypt data"), function(combinedKeys, encrypted){
-                 _asym.encrypt(encryptKey, combinedKeys, onError.bind("Could not encrypt AES keys"), function(encryptedKeys) {
-                  onSuccess({
-                    // symmetric encryption output 
-                    cipherdata: encrypted.cipherdata, hmac: encrypted.hmac,
-                    // encrypted symmetric encryption keys 
-                    encryptedKeys: encryptedKeys,
-                  });         
-                 });           
-                });    
+            _encrypt: function(encryptKey, data, rawData, onError, onSuccess) {
+                
+                var dataLenght = data instanceof ArrayBuffer? data.byteLength : data.length;
+                if (dataLenght <= config.rsaEncryptMax) {
+                    _asym.encrypt(encryptKey, data, onError.bind("Could not RSA encrypt data"), function(encrypted) {
+                        rawData["data"] = data;
+                        onSuccess({rsaEncrypted: encrypted});
+                    });
+                }
+                else {
+                    _asym.aesEncrypt(data, onError.bind(null, "Could not AES encrypt data"), function(combinedKeys, encrypted){
+                        _asym.encrypt(encryptKey, combinedKeys, onError.bind("Could not encrypt AES keys"), function(encryptedKeys) {
+                            rawData["data"] = combinedKeys;
+                            onSuccess({
+                                // AES encryption output 
+                                aesEncrypted: encrypted.aesEncrypted, hmac: encrypted.hmac,
+                                // RSA encrypted symmetric encryption keys 
+                                rsaEncrypted: encryptedKeys,
+                            });         
+                        });           
+                    });
+                } 
             },
+            encrypt: function(encryptKey, data, onError, onSuccess) {
+                var rawData = {};
+                this._encrypt(encryptKey, data, rawData, onError, onSuccess);
+            },
+            
 
             encryptAndSign: function (encryptKey, signKey, data, onError, onSuccess) {
+                var rawData = {};
                 // encrypt data
-                // sign keys
-                // encrypt keys
-                // sign encrypted keys
-                _asym.aesEncrypt(data, onError.bind(null, "Could not encrypt data"), function(combinedKeys, encrypted){
-                 _asym.sign(signKey, combinedKeys, onError.bind(null, "Could not sign AES keys"), function(keysSignature) {
-                  _asym.encrypt(encryptKey, combinedKeys, onError.bind("Could not encrypt AES keys"), function(encryptedKeys) {
-                   _asym.sign(signKey, encryptedKeys, onError.bind(null, "Could not sign encrypted AES keys"), function(encryptedKeysSignature) {
-                    onSuccess({
-                        // symmetric encryption output 
-                        cipherdata: encrypted.cipherdata, hmac: encrypted.hmac,
-                        // encrypted symmetric encryption keys 
-                        encryptedKeys: encryptedKeys,
-                        // signatures of plain and encryped symmetric encryption keys
-                        keysSignature: keysSignature, encryptedKeysSignature: encryptedKeysSignature
-                    });         
-                   });       
-                  });
-                 })    
+                // sign data
+                // sign encrypted data
+                this._encrypt(encryptKey, data, rawData, onError, function(encrypted) {    
+                    _asym.sign(signKey, rawData.data, onError.bind(null, "Could not sign raw data"), function(signatureOfData) {
+                        _asym.sign(signKey, encrypted.rsaEncrypted, onError.bind(null, "Could not sign encrypted data"), function(signatureOfEncrypted) {
+                            encrypted["signatureOfData"] = signatureOfData;
+                            encrypted["signatureOfEncrypted"] = signatureOfEncrypted;
+                            onSuccess(encrypted);         
+                        });       
+                    });
                 });
-                
             },
         },
 
@@ -516,9 +570,9 @@
                     else {
                         iv = window.crypto.getRandomValues(new Uint8Array(config.aesIvLength));
                     }
-                    _sym.encrypt(keys.aesKeyObj, iv, data, onError.bind(null, "Could not AES Encrypt"), function(cipherdata){
-                        _sym.signHMAC(keys.hmacKeyObj, cipherdata, onError.bind(null, "Could not HMAC sign"), function(hmac) {
-                            var data = { cipherdata: cipherdata, hmac: hmac };
+                    _sym.encrypt(keys.aesKeyObj, iv, data, onError.bind(null, "Could not AES Encrypt"), function(aesEncrypted){
+                        _sym.signHMAC(keys.hmacKeyObj, aesEncrypted, onError.bind(null, "Could not HMAC sign"), function(hmac) {
+                            var data = { aesEncrypted: aesEncrypted, hmac: hmac };
                             onSuccess({ keys: keys, data: data });                           
                         });  
                     });
@@ -527,9 +581,9 @@
 
             decrypt: function (keys, data, onError, onSuccess) {
                 simpleCrypto.sym.importKeys(keys, onError, function(){
-                    _sym.verifyHMAC(keys.hmacKeyObj, data.hmac, data.cipherdata, onError.bind(null, "Could not verify HMAC"), function(){
-                        _sym.decryptAES(keys.aesKeyObj, data.cipherdata, onError.bind(null, "Could not AES decrypt"), function(data) {
-                            onSuccess(data);
+                    _sym.verifyHMAC(keys.hmacKeyObj, data.hmac, data.aesEncrypted, onError.bind(null, "Could not verify HMAC"), function(){
+                        _sym.decryptAES(keys.aesKeyObj, data.aesEncrypted, onError.bind(null, "Could not AES decrypt"), function(decrypted) {
+                            onSuccess(decrypted);
                         });
                     });    
                 });
@@ -544,13 +598,15 @@
         
         LABEL_TO_INDEX: {
                     // symmetric
-                    cipherdata : 0, hmac: 1,
+                    aesEncrypted : 0, hmac: 1,
                     // asymmetric
-                    encryptedKeys: 100, keysSignature: 101, encryptedKeysSignature: 102
+                    rsaEncrypted: 10,
+                    signatureOfData: 20, signatureOfEncrypted: 21
         },
         INDEX_TO_LABEL: {
-                    0: "cipherdata", 1: "hmac",
-                     100: "encryptedKeys",  101: "keysSignature", 102: "encryptedKeysSignature"
+                    0: "aesEncrypted", 1: "hmac",
+                    10: "rsaEncrypted",
+                    20: "signatureOfData", 21: "signatureOfEncrypted"
         },
     
      
@@ -579,7 +635,7 @@
                 view.setUint8(offset, index);
                 var data = dict[label];
                 view.setUint32(offset + 1, data.byteLength);
-                (new Uint8Array(view.buffer)).set(data, offset + 5);
+                (new Uint8Array(view.buffer)).set(new Uint8Array(data), offset + 5);
                 offset += 5 + data.byteLength;
             }
             return buffer;
