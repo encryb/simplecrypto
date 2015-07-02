@@ -702,12 +702,16 @@
             },
         },
 
+
+        /**
+         * Symmetric Encryption
+         * @class asym
+         */
         sym: {
             
-            
-            /** Generate AES and HMAC keys
+            /** Generate random AES and HMAC keys
              *
-             * @method importKeys
+             * @method generateKeys
              * @param {function} onError - called with error details if the generation fails
              * @param {function} onSuccess - called with {aesKey: raw key, hmacKey: raw key, aesKeyObj: CryptoKey, hmacKeyObj: CryptoKey}
              */
@@ -752,15 +756,30 @@
                 });
             },
             
+            /** Generate random AES and HMAC keys and encrypt data. This utility function combines generateKeys and encrypt
+             * 
+             * @param {Uint8Array | ArrayBuffer} data - Data to encrypt
+             * @param {function} onError - called with error details if key generation or encryption fail
+             * @param {function} onSuccess - called with {keys: [see generateKeys output], data: [see encrypt output]) 
+             */
             genKeysAndEncrypt: function(data, onError, onSuccess) {
                 simpleCrypto.sym.generateKeys(onError, function(keys) {
-                    simpleCrypto.sym.encrypt(keys, data, onError, onSuccess);
+                    simpleCrypto.sym.encrypt(keys, data, onError, function(encrypted){
+                        onSuccess({ keys: keys, data: encrypted });
+                    });
                 });
             },
             
+            /** Generate random AES and HMAC keys and encrypt data. This utility function combines generateKeys and encrypt
+             *
+             * @param {Object} keys - AES and HMAC keys. Also optional IV (otherwise random is generated)
+             * @param {Uint8Array | ArrayBuffer} data - Data to encrypt
+             * @param {function} onError - called with error details if key generation or encryption fail
+             * @param {function} onSuccess - called with {aesEncrypted: ArrayBuffer, hmac: {ArrayBuffer}
+             */
             encrypt: function (keys, data, onError, onSuccess) {
 
-                simpleCrypto.sym.importKeys(keys, onError.bind(null, &quot;Could not get keys&quot;), function() {
+                simpleCrypto.sym.importKeys(keys, onError, function() {
                     var iv;
                     if (&quot;iv&quot; in keys) {
                         iv = keys.iv; 
@@ -770,17 +789,24 @@
                     }
                     _sym.encrypt(keys.aesKeyObj, iv, data, onError.bind(null, &quot;Could not AES Encrypt&quot;), function(aesEncrypted){
                         _sym.signHMAC(keys.hmacKeyObj, aesEncrypted, onError.bind(null, &quot;Could not HMAC sign&quot;), function(hmac) {
-                            var data = { aesEncrypted: aesEncrypted, hmac: hmac };
-                            onSuccess({ keys: keys, data: data });                           
+                            var encrypted = { aesEncrypted: aesEncrypted, hmac: hmac };
+                            onSuccess(encrypted);                           
                         });  
                     });
                 });
             },
 
-            decrypt: function (keys, data, onError, onSuccess) {
+            /** Decrypt
+             *  
+             * @param {Object} keys - AES and HMAC keys. Also optional IV (otherwise random is generated)
+             * @param {Uint8Array | ArrayBuffer} data - Data to encrypt
+             * @param {function} onError - called with error details if key generation or encryption fail
+             * @param {function} onSuccess - called with {aesEncrypted: ArrayBuffer, hmac: {ArrayBuffer}
+             */
+            decrypt: function (keys, encrypted, onError, onSuccess) {
                 simpleCrypto.sym.importKeys(keys, onError, function(){
-                    _sym.verifyHMAC(keys.hmacKeyObj, data.hmac, data.aesEncrypted, onError.bind(null, &quot;Could not verify HMAC&quot;), function(){
-                        _sym.decryptAES(keys.aesKeyObj, data.aesEncrypted, onError.bind(null, &quot;Could not AES decrypt&quot;), function(decrypted) {
+                    _sym.verifyHMAC(keys.hmacKeyObj, encrypted.hmac, encrypted.aesEncrypted, onError.bind(null, &quot;Could not verify HMAC&quot;), function(){
+                        _sym.decryptAES(keys.aesKeyObj, encrypted.aesEncrypted, onError.bind(null, &quot;Could not AES decrypt&quot;), function(decrypted) {
                             onSuccess(decrypted);
                         });
                     });    

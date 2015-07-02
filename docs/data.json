@@ -34,7 +34,7 @@
             "namespaces": {},
             "tag": "module",
             "file": "src\\simplecrypto.js",
-            "line": 707,
+            "line": 733,
             "description": "Simple Crypto Javascript library built on WebCrypto"
         }
     },
@@ -64,8 +64,8 @@
             "module": "simpleCrypto",
             "namespace": "",
             "file": "src\\simplecrypto.js",
-            "line": 438,
-            "description": "Asymmetric Encryption"
+            "line": 622,
+            "description": "Symmetric Encryption"
         },
         "pack": {
             "name": "pack",
@@ -78,7 +78,7 @@
             "module": "simpleCrypto",
             "namespace": "",
             "file": "src\\simplecrypto.js",
-            "line": 707,
+            "line": 733,
             "description": "Encoding/Decoding for encrypted data transport"
         }
     },
@@ -365,9 +365,9 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 624,
+            "line": 628,
             "itemtype": "method",
-            "name": "importKeys",
+            "name": "generateKeys",
             "params": [
                 {
                     "name": "onError",
@@ -385,7 +385,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 642,
+            "line": 646,
             "itemtype": "method",
             "name": "importKeys",
             "params": [
@@ -410,7 +410,86 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 729,
+            "line": 675,
+            "params": [
+                {
+                    "name": "data",
+                    "description": "- Data to encrypt",
+                    "type": "Uint8Array | ArrayBuffer"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if key generation or encryption fail",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with {keys: [see generateKeys output], data: [see encrypt output])",
+                    "type": "Function"
+                }
+            ],
+            "class": "asym",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 689,
+            "params": [
+                {
+                    "name": "keys",
+                    "description": "- AES and HMAC keys. Also optional IV (otherwise random is generated)",
+                    "type": "Object"
+                },
+                {
+                    "name": "data",
+                    "description": "- Data to encrypt",
+                    "type": "Uint8Array | ArrayBuffer"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if key generation or encryption fail",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with {aesEncrypted: ArrayBuffer, hmac: {ArrayBuffer}",
+                    "type": "Function"
+                }
+            ],
+            "class": "asym",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 715,
+            "params": [
+                {
+                    "name": "keys",
+                    "description": "- AES and HMAC keys. Also optional IV (otherwise random is generated)",
+                    "type": "Object"
+                },
+                {
+                    "name": "data",
+                    "description": "- Data to encrypt",
+                    "type": "Uint8Array | ArrayBuffer"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if key generation or encryption fail",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with {aesEncrypted: ArrayBuffer, hmac: {ArrayBuffer}",
+                    "type": "Function"
+                }
+            ],
+            "class": "asym",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 755,
             "description": "Encode encrypted data",
             "itemtype": "method",
             "name": "encode",
@@ -430,7 +509,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 771,
+            "line": 797,
             "description": "Decode encrypted data. Decoding should be a zero copy operation, since all returned Uint8Arrays point to the original buffer",
             "itemtype": "method",
             "name": "decode",
@@ -453,6 +532,18 @@
         {
             "message": "param name missing: {Object}",
             "line": " src\\simplecrypto.js:507"
+        },
+        {
+            "message": "Missing item type",
+            "line": " src\\simplecrypto.js:675"
+        },
+        {
+            "message": "Missing item type",
+            "line": " src\\simplecrypto.js:689"
+        },
+        {
+            "message": "Missing item type",
+            "line": " src\\simplecrypto.js:715"
         }
     ]
 }
