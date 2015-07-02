@@ -5,11 +5,11 @@ describe('pack', function() {
         var dict = { aesEncrypted: emptyBuffer, hmac: emptyBuffer, 
                      rsaEncrypted: emptyBuffer, 
                      signatureOfData: emptyBuffer, signatureOfEncrypted: emptyBuffer };
-        gEnc = simpleCrypto.encoding.encode(dict);
+        gEnc = simpleCrypto.pack.encode(dict);
         done();
     });
     it('decode', function(done) {
-        var dict = simpleCrypto.encoding.decode(gEnc);
+        var dict = simpleCrypto.pack.decode(gEnc);
         expect(new Uint8Array(emptyBuffer)).toEqual(new Uint8Array(dict.aesEncrypted));
         expect(new Uint8Array(emptyBuffer)).toEqual(new Uint8Array(dict.hmac));
         expect(new Uint8Array(emptyBuffer)).toEqual(new Uint8Array(dict.rsaEncrypted));

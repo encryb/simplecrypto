@@ -41,8 +41,9 @@ describe('symmetricWithKeys', function() {
 
 
     beforeEach(function (done) {
-        simpleCrypto.sym.encrypt({aesKey: aesKey, hmacKey: hmacKey}, testArray, logError.bind(null, done), function(encrypted) {
-           simpleCrypto.sym.decrypt(encrypted.keys, encrypted.data, logError.bind(null, done), function(decrypted) {
+        var keys = {aesKey: aesKey, hmacKey: hmacKey};
+        simpleCrypto.sym.encrypt(keys, testArray, logError.bind(null, done), function(encrypted) {
+           simpleCrypto.sym.decrypt(keys, encrypted, logError.bind(null, done), function(decrypted) {
               result = decrypted;
               done(); 
            });

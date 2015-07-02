@@ -1,7 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>src\simplecrypto.js - simplecrypto.js</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
+    <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
+    <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
+    <link rel="icon" href="../assets/favicon.ico">
+    <script src="http://yui.yahooapis.com/combo?3.9.1/build/yui/yui-min.js"></script>
+</head>
+<body class="yui3-skin-sam">
+
+<div id="doc">
+    <div id="hd" class="yui3-g header">
+        <div class="yui3-u-3-4">
+                <h1><img src="https://www.encryb.com/img/crib-md.png" title="simplecrypto.js"></h1>
+        </div>
+        <div class="yui3-u-1-4 version">
+            <em>API Docs for: 0.0.2</em>
+        </div>
+    </div>
+    <div id="bd" class="yui3-g">
+
+        <div class="yui3-u-1-4">
+            <div id="docs-sidebar" class="sidebar apidocs">
+                <div id="api-list">
+                    <h2 class="off-left">APIs</h2>
+                    <div id="api-tabview" class="tabview">
+                        <ul class="tabs">
+                            <li><a href="#api-classes">Classes</a></li>
+                            <li><a href="#api-modules">Modules</a></li>
+                        </ul>
+                
+                        <div id="api-tabview-filter">
+                            <input type="search" id="api-filter" placeholder="Type to filter APIs">
+                        </div>
+                
+                        <div id="api-tabview-panel">
+                            <ul id="api-classes" class="apis classes">
+                                <li><a href="../classes/asym.html">asym</a></li>
+                                <li><a href="../classes/pack.html">pack</a></li>
+                                <li><a href="../classes/storage.html">storage</a></li>
+                            </ul>
+                
+                            <ul id="api-modules" class="apis modules">
+                                <li><a href="../modules/simpleCrypto.html">simpleCrypto</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="yui3-u-3-4">
+                <div id="api-options">
+                    Show:
+                    <label for="api-show-inherited">
+                        <input type="checkbox" id="api-show-inherited" checked>
+                        Inherited
+                    </label>
+            
+                    <label for="api-show-protected">
+                        <input type="checkbox" id="api-show-protected">
+                        Protected
+                    </label>
+            
+                    <label for="api-show-private">
+                        <input type="checkbox" id="api-show-private">
+                        Private
+                    </label>
+                    <label for="api-show-deprecated">
+                        <input type="checkbox" id="api-show-deprecated">
+                        Deprecated
+                    </label>
+            
+                </div>
+            
+            <div class="apidocs">
+                <div id="docs-main">
+                    <div class="content">
+<h1 class="file-heading">File: src\simplecrypto.js</h1>
+
+<div class="file">
+    <pre class="code prettyprint linenums">
 ﻿(function (root, factory) {
-    if (typeof define === "function" && define.amd) {
+    if (typeof define === &quot;function&quot; &amp;&amp; define.amd) {
         define(factory);
-    } else if (typeof module === "object" && module.exports) {
+    } else if (typeof module === &quot;object&quot; &amp;&amp; module.exports) {
         module.exports = factory();
     } else {
         root.simpleCrypto = factory();
@@ -9,10 +93,10 @@
 }(this, function () {
     var oldWebkit = false;
     var oldIE = false;
-    if (window.crypto && window.crypto.webkitSubtle && window.crypto.subtle === undefined){
+    if (window.crypto &amp;&amp; window.crypto.webkitSubtle &amp;&amp; window.crypto.subtle === undefined){
         oldWebkit = true;
     }
-    if (window.msCrypto && (window.crypto === undefined || window.crypto.subtle === undefined)){
+    if (window.msCrypto &amp;&amp; (window.crypto === undefined || window.crypto.subtle === undefined)){
         oldIE = true;
     }
     
@@ -21,12 +105,12 @@
     window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
         
     var config = {
-        aesCipher: "AES-CBC",
+        aesCipher: &quot;AES-CBC&quot;,
         aesLength: 128,
         aesIvLength: 16,
         hmacOptions: {
-            name: "HMAC",
-            hash: { name: "SHA-256" },
+            name: &quot;HMAC&quot;,
+            hash: { name: &quot;SHA-256&quot; },
             // old webkit stores length in bytes, everything else in bits
             length: oldWebkit ? 32 : 256
         },
@@ -35,10 +119,10 @@
         // (rsaLength / 8) - 2 - (2 * hash length)
         rsaEncryptMax: 214,
         
-        rsaEncryptCipher: "RSA-OAEP",
-        rsaEncryptHash: "SHA-1",
-        rsaSignCipher: "RSASSA-PKCS1-v1_5",
-        rsaSignHash: "SHA-256"
+        rsaEncryptCipher: &quot;RSA-OAEP&quot;,
+        rsaEncryptHash: &quot;SHA-1&quot;,
+        rsaSignCipher: &quot;RSASSA-PKCS1-v1_5&quot;,
+        rsaSignHash: &quot;SHA-256&quot;
     };
 
     function combineBuffers(buffer1, buffer2) {
@@ -49,7 +133,7 @@
     }
 
     function wrap(result, onError, onSuccess) {
-        if (typeof result.then === "function") {
+        if (typeof result.then === &quot;function&quot;) {
             result.catch(onError).then(onSuccess);
         }
         else {
@@ -66,7 +150,7 @@
 
     function stringToBytes(str) {
         var chars = [];
-        for (var i = 0; i < str.length; ++i) {
+        for (var i = 0; i &lt; str.length; ++i) {
             chars.push(str.charCodeAt(i));
         }
         return new Uint8Array(chars);
@@ -77,7 +161,7 @@
             wrap(window.crypto.subtle.generateKey(
                     { name: config.aesCipher, length: config.aesLength },
                     true,
-                    ["encrypt", "decrypt"]
+                    [&quot;encrypt&quot;, &quot;decrypt&quot;]
                 ),
                 onError,
                 function (aesKey) {
@@ -90,7 +174,7 @@
             wrap(window.crypto.subtle.generateKey(
                     config.hmacOptions,
                     true,
-                    ["sign", "verify"]
+                    [&quot;sign&quot;, &quot;verify&quot;]
                 ),
                 onError,
                 function (hmacKey) {
@@ -101,11 +185,11 @@
 
         importKeyAES: function (key, onError, onSuccess) {     
             wrap(window.crypto.subtle.importKey(
-                    "raw",
+                    &quot;raw&quot;,
                     key,
                     { name: config.aesCipher },
                     false,
-                    ["encrypt", "decrypt"]),
+                    [&quot;encrypt&quot;, &quot;decrypt&quot;]),
                 onError,
                 function (keyObj) {
                     onSuccess(keyObj);
@@ -114,11 +198,11 @@
         },
         importKeyHMAC: function(key, onError, onSuccess) {
             wrap(window.crypto.subtle.importKey(
-                    "raw",
+                    &quot;raw&quot;,
                     key,
                     config.hmacOptions,
                     false,
-                    ["sign", "verify"]),
+                    [&quot;sign&quot;, &quot;verify&quot;]),
                 onError,
                 function (keyObj) {
                     onSuccess(keyObj);
@@ -127,7 +211,7 @@
         },
                 
         exportKey: function (key, onError, onSuccess) {
-            wrap(window.crypto.subtle.exportKey("raw", key),
+            wrap(window.crypto.subtle.exportKey(&quot;raw&quot;, key),
                 onError,
                 function (key) {
                     onSuccess(key);
@@ -194,7 +278,7 @@
                  onError,
                  function (isValid) {
                      if (!isValid) {
-                         onError("Invalid HMAC");
+                         onError(&quot;Invalid HMAC&quot;);
                      }
                      else {
                          onSuccess();
@@ -214,7 +298,7 @@
                         hash: { name: config.rsaEncryptHash }
                     },
                     true,
-                    ["encrypt", "decrypt"]
+                    [&quot;encrypt&quot;, &quot;decrypt&quot;]
                 ), 
                 onError,
                 onSuccess
@@ -229,7 +313,7 @@
                         hash: { name: config.rsaSignHash }
                     },
                     true,
-                    ["sign", "verify"]
+                    [&quot;sign&quot;, &quot;verify&quot;]
                 ), 
                 onError,
                 onSuccess
@@ -243,11 +327,11 @@
             }
             
             wrap(window.crypto.subtle.importKey(
-                    "jwk",
+                    &quot;jwk&quot;,
                     jwk,
                     { name: config.rsaEncryptCipher, hash: {name: config.rsaEncryptHash } },
                     false,
-                    ["decrypt"] 
+                    [&quot;decrypt&quot;] 
                 ), onError,
                 function (privateKey) {
                     onSuccess(privateKey);
@@ -259,11 +343,11 @@
                 jwk = stringToBytes(JSON.stringify(jwk));
             }
             wrap(window.crypto.subtle.importKey(
-                    "jwk",
+                    &quot;jwk&quot;,
                     jwk,
                     { name: config.rsaSignCipher, hash: { name: config.rsaSignHash } },
                     false,
-                    ["sign"]
+                    [&quot;sign&quot;]
                 ), onError,
                 function (privateKey) {
                     onSuccess(privateKey);
@@ -272,7 +356,7 @@
         }, 
         exportKey: function(key, onError, onSuccess) {
             wrap(window.crypto.subtle.exportKey(
-                    "jwk",
+                    &quot;jwk&quot;,
                     key
                 ), onError,
                 function (jwk) {
@@ -366,7 +450,7 @@
                 var offset = combinedkeys.byteOffset;
                 length = combinedkeys.length;
                 if (length != (aesLength + hmacLength)) {
-                    onError("Combined keys size is incorrect", length, aesLength, hmacLength);
+                    onError(&quot;Combined keys size is incorrect&quot;, length, aesLength, hmacLength);
                     return;
                 }
                 aesKey = new Uint8Array(combinedkeys.buffer, offset, aesLength);
@@ -375,7 +459,7 @@
             else if (combinedkeys instanceof ArrayBuffer) {
                 length = combinedkeys.byteLength;
                 if (length != (aesLength + hmacLength)) {
-                    onError("Combined keys size is incorrect", length, aesLength, hmacLength);
+                    onError(&quot;Combined keys size is incorrect&quot;, length, aesLength, hmacLength);
                     return;
                 }
                 aesKey = new Uint8Array(combinedkeys, 0, aesLength);
@@ -464,10 +548,10 @@
              */
             generateEncryptKey: function (onError, onSuccess) {
 
-                _asym.generateEncryptKeys(onError.bind(null, "Could not generate encrypt key"), function(keys) {
-                 _asym.exportKey(keys.publicKey, onError.bind(null, "Could not export public encrypt key"), function(publicJwk) {
-                  _asym.exportKey(keys.privateKey, onError.bind(null, "Could not export private encrypt key"), function(privateJwk){
-                   _asym.importEncryptPrivateKey(privateJwk, onError.bind(null, "Could not import private encrypt key"), function(privateKey) {
+                _asym.generateEncryptKeys(onError.bind(null, &quot;Could not generate encrypt key&quot;), function(keys) {
+                 _asym.exportKey(keys.publicKey, onError.bind(null, &quot;Could not export public encrypt key&quot;), function(publicJwk) {
+                  _asym.exportKey(keys.privateKey, onError.bind(null, &quot;Could not export private encrypt key&quot;), function(privateJwk){
+                   _asym.importEncryptPrivateKey(privateJwk, onError.bind(null, &quot;Could not import private encrypt key&quot;), function(privateKey) {
 
                      onSuccess({privateKey: privateKey, publicKey: keys.publicKey, 
                                 privateJwk: privateJwk, publicJwk: publicJwk});
@@ -488,10 +572,10 @@
              */
             generateSignKey: function (onError, onSuccess) {
 
-                _asym.generateSignKeys(onError.bind(null, "Could not generate sign key"), function(keys) {
-                 _asym.exportKey(keys.publicKey, onError.bind(null, "Could not export public sign key"), function(publicJwk) {
-                  _asym.exportKey(keys.privateKey, onError.bind(null, "Could not export private sign key"), function(privateJwk){
-                   _asym.importSignPrivateKey(privateJwk, onError.bind(null, "Could not import private sign key"), function(privateKey) {
+                _asym.generateSignKeys(onError.bind(null, &quot;Could not generate sign key&quot;), function(keys) {
+                 _asym.exportKey(keys.publicKey, onError.bind(null, &quot;Could not export public sign key&quot;), function(publicJwk) {
+                  _asym.exportKey(keys.privateKey, onError.bind(null, &quot;Could not export private sign key&quot;), function(privateJwk){
+                   _asym.importSignPrivateKey(privateJwk, onError.bind(null, &quot;Could not import private sign key&quot;), function(privateKey) {
 
                      onSuccess({privateKey: privateKey, publicKey: keys.publicKey, 
                                 privateJwk: privateJwk, publicJwk: publicJwk});
@@ -515,12 +599,12 @@
              */
             decrypt: function (decryptKey, dict, onError, onSuccess) {
                 if (dict.aesEncrypted) {
-                    _asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, "Could not decrypt keys"), function(combinedKeys){
+                    _asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, &quot;Could not decrypt keys&quot;), function(combinedKeys){
                         _asym.aesDecrypt(combinedKeys, { aesEncrypted: dict.aesEncrypted, hmac: dict.hmac }, onError, onSuccess);
                     });
                 }
                 else {
-                    _asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, "Could not RSA decrypt"), onSuccess);
+                    _asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, &quot;Could not RSA decrypt&quot;), onSuccess);
                 }
             },
 
@@ -536,9 +620,9 @@
              * @param {function} onSuccess - called with decrypted ArrayBuffer
              */
             verifyAndDecrypt: function (decryptKey, verifyKey, dict, onError, onSuccess) {
-                _asym.verifySignature(verifyKey, dict.signatureOfEncrypted, dict.rsaEncrypted, onError.bind(null, "Could not verify encrypted keys"), function(){
-                    _asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, "Could not decrypt keys"), function(decrypted){
-                        _asym.verifySignature(verifyKey, dict.signatureOfData, decrypted, onError.bind(null, "Could not verify keys"), function(){
+                _asym.verifySignature(verifyKey, dict.signatureOfEncrypted, dict.rsaEncrypted, onError.bind(null, &quot;Could not verify encrypted keys&quot;), function(){
+                    _asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, &quot;Could not decrypt keys&quot;), function(decrypted){
+                        _asym.verifySignature(verifyKey, dict.signatureOfData, decrypted, onError.bind(null, &quot;Could not verify keys&quot;), function(){
                             if (dict.aesEncrypted) {
                                 _asym.aesDecrypt(decrypted, { aesEncrypted: dict.aesEncrypted, hmac: dict.hmac }, onError, onSuccess);
                             }
@@ -553,16 +637,16 @@
             _encrypt: function(encryptKey, data, rawData, onError, onSuccess) {
                 
                 var dataLenght = data instanceof ArrayBuffer? data.byteLength : data.length;
-                if (dataLenght <= config.rsaEncryptMax) {
-                    _asym.encrypt(encryptKey, data, onError.bind("Could not RSA encrypt data"), function(encrypted) {
-                        rawData["data"] = data;
+                if (dataLenght &lt;= config.rsaEncryptMax) {
+                    _asym.encrypt(encryptKey, data, onError.bind(&quot;Could not RSA encrypt data&quot;), function(encrypted) {
+                        rawData[&quot;data&quot;] = data;
                         onSuccess({rsaEncrypted: encrypted});
                     });
                 }
                 else {
-                    _asym.aesEncrypt(data, onError.bind(null, "Could not AES encrypt data"), function(combinedKeys, encrypted){
-                        _asym.encrypt(encryptKey, combinedKeys, onError.bind("Could not encrypt AES keys"), function(encryptedKeys) {
-                            rawData["data"] = combinedKeys;
+                    _asym.aesEncrypt(data, onError.bind(null, &quot;Could not AES encrypt data&quot;), function(combinedKeys, encrypted){
+                        _asym.encrypt(encryptKey, combinedKeys, onError.bind(&quot;Could not encrypt AES keys&quot;), function(encryptedKeys) {
+                            rawData[&quot;data&quot;] = combinedKeys;
                             onSuccess({
                                 // AES encryption output 
                                 aesEncrypted: encrypted.aesEncrypted, hmac: encrypted.hmac,
@@ -576,7 +660,7 @@
             
             /**
              * Decrypt. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted. 
-             * "Large" trashhold is defined in config.
+             * &quot;Large&quot; trashhold is defined in config.
              * 
              * @method encrypt
              * @param {CryptoKey} encryptKey - RSA encryption public key
@@ -591,7 +675,7 @@
             
             /**
              * Encrypt and Sign. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted.
-             * "Large" trashhold is defined in config.
+             * &quot;Large&quot; trashhold is defined in config.
              * The order of operations is: AES (encrypt if required), encrypt content/keys, sign content/keys, sign encrypted content/keys. 
              * 
              * @method encryptAndSign
@@ -607,10 +691,10 @@
                 // sign data
                 // sign encrypted data
                 this._encrypt(encryptKey, data, rawData, onError, function(encrypted) {    
-                    _asym.sign(signKey, rawData.data, onError.bind(null, "Could not sign raw data"), function(signatureOfData) {
-                        _asym.sign(signKey, encrypted.rsaEncrypted, onError.bind(null, "Could not sign encrypted data"), function(signatureOfEncrypted) {
-                            encrypted["signatureOfData"] = signatureOfData;
-                            encrypted["signatureOfEncrypted"] = signatureOfEncrypted;
+                    _asym.sign(signKey, rawData.data, onError.bind(null, &quot;Could not sign raw data&quot;), function(signatureOfData) {
+                        _asym.sign(signKey, encrypted.rsaEncrypted, onError.bind(null, &quot;Could not sign encrypted data&quot;), function(signatureOfEncrypted) {
+                            encrypted[&quot;signatureOfData&quot;] = signatureOfData;
+                            encrypted[&quot;signatureOfEncrypted&quot;] = signatureOfEncrypted;
                             onSuccess(encrypted);         
                         });       
                     });
@@ -618,16 +702,12 @@
             },
         },
 
-
-        /**
-         * Symmetric Encryption
-         * @class asym
-         */
         sym: {
+            
             
             /** Generate AES and HMAC keys
              *
-             * @method generateKeys
+             * @method importKeys
              * @param {function} onError - called with error details if the generation fails
              * @param {function} onSuccess - called with {aesKey: raw key, hmacKey: raw key, aesKeyObj: CryptoKey, hmacKeyObj: CryptoKey}
              */
@@ -635,10 +715,10 @@
 
                 // generate random AES and HMAC keys
                 // export them in RAW format
-                _sym.generateKeyAES(onError.bind(null, "Could not generate AES key"), function(aesKeyObj){
-                 _sym.generateKeyHMAC(onError.bind(null, "Could not generate HMAC key"), function(hmacKeyObj){
-                  _sym.exportKey(aesKeyObj, onError.bind(null, "Could not export AES key"), function(aesKey) {
-                   _sym.exportKey(hmacKeyObj, onError.bind(null, "Could not export HMAC key"), function(hmacKey) {
+                _sym.generateKeyAES(onError.bind(null, &quot;Could not generate AES key&quot;), function(aesKeyObj){
+                 _sym.generateKeyHMAC(onError.bind(null, &quot;Could not generate HMAC key&quot;), function(hmacKeyObj){
+                  _sym.exportKey(aesKeyObj, onError.bind(null, &quot;Could not export AES key&quot;), function(aesKey) {
+                   _sym.exportKey(hmacKeyObj, onError.bind(null, &quot;Could not export HMAC key&quot;), function(hmacKey) {
                        onSuccess({aesKeyObj: aesKeyObj, hmacKeyObj: hmacKeyObj, aesKey: aesKey, hmacKey: hmacKey});    
                    }); }); }); });
             },
@@ -653,20 +733,20 @@
             importKeys: function(keys, onError, onSuccess) {
                 
                 // keys already has cached imported object
-                if (("aesKeyObj" in keys) && ("hmacKeyObj" in keys)) {
+                if ((&quot;aesKeyObj&quot; in keys) &amp;&amp; (&quot;hmacKeyObj&quot; in keys)) {
                     onSuccess(keys);
                     return;
                 }
                 
-                if (!keys || !("aesKey" in keys) || !("hmacKey" in keys)) {    
-                    onError("Missing keys");
+                if (!keys || !(&quot;aesKey&quot; in keys) || !(&quot;hmacKey&quot; in keys)) {    
+                    onError(&quot;Missing keys&quot;);
                     return;
                 }
                 
-                _sym.importKeyAES(keys.aesKey, onError.bind(null, "Could not import AES key"), function(aesKeyObj) {
-                    keys["aesKeyObj"] = aesKeyObj;
-                    _sym.importKeyHMAC(keys.hmacKey, onError.bind(null, "Could not import HMAC key"), function(hmacKeyObj) {
-                        keys["hmacKeyObj"] = hmacKeyObj;
+                _sym.importKeyAES(keys.aesKey, onError.bind(null, &quot;Could not import AES key&quot;), function(aesKeyObj) {
+                    keys[&quot;aesKeyObj&quot;] = aesKeyObj;
+                    _sym.importKeyHMAC(keys.hmacKey, onError.bind(null, &quot;Could not import HMAC key&quot;), function(hmacKeyObj) {
+                        keys[&quot;hmacKeyObj&quot;] = hmacKeyObj;
                         onSuccess();
                     });
                 });
@@ -674,26 +754,24 @@
             
             genKeysAndEncrypt: function(data, onError, onSuccess) {
                 simpleCrypto.sym.generateKeys(onError, function(keys) {
-                    simpleCrypto.sym.encrypt(keys, data, onError, function(encrypted){
-                        onSuccess({ keys: keys, data: encrypted });
-                    });
+                    simpleCrypto.sym.encrypt(keys, data, onError, onSuccess);
                 });
             },
             
             encrypt: function (keys, data, onError, onSuccess) {
 
-                simpleCrypto.sym.importKeys(keys, onError.bind(null, "Could not get keys"), function() {
+                simpleCrypto.sym.importKeys(keys, onError.bind(null, &quot;Could not get keys&quot;), function() {
                     var iv;
-                    if ("iv" in keys) {
+                    if (&quot;iv&quot; in keys) {
                         iv = keys.iv; 
                     }
                     else {
                         iv = window.crypto.getRandomValues(new Uint8Array(config.aesIvLength));
                     }
-                    _sym.encrypt(keys.aesKeyObj, iv, data, onError.bind(null, "Could not AES Encrypt"), function(aesEncrypted){
-                        _sym.signHMAC(keys.hmacKeyObj, aesEncrypted, onError.bind(null, "Could not HMAC sign"), function(hmac) {
-                            var encrypted = { aesEncrypted: aesEncrypted, hmac: hmac };
-                            onSuccess(encrypted);                           
+                    _sym.encrypt(keys.aesKeyObj, iv, data, onError.bind(null, &quot;Could not AES Encrypt&quot;), function(aesEncrypted){
+                        _sym.signHMAC(keys.hmacKeyObj, aesEncrypted, onError.bind(null, &quot;Could not HMAC sign&quot;), function(hmac) {
+                            var data = { aesEncrypted: aesEncrypted, hmac: hmac };
+                            onSuccess({ keys: keys, data: data });                           
                         });  
                     });
                 });
@@ -701,8 +779,8 @@
 
             decrypt: function (keys, data, onError, onSuccess) {
                 simpleCrypto.sym.importKeys(keys, onError, function(){
-                    _sym.verifyHMAC(keys.hmacKeyObj, data.hmac, data.aesEncrypted, onError.bind(null, "Could not verify HMAC"), function(){
-                        _sym.decryptAES(keys.aesKeyObj, data.aesEncrypted, onError.bind(null, "Could not AES decrypt"), function(decrypted) {
+                    _sym.verifyHMAC(keys.hmacKeyObj, data.hmac, data.aesEncrypted, onError.bind(null, &quot;Could not verify HMAC&quot;), function(){
+                        _sym.decryptAES(keys.aesKeyObj, data.aesEncrypted, onError.bind(null, &quot;Could not AES decrypt&quot;), function(decrypted) {
                             onSuccess(decrypted);
                         });
                     });    
@@ -726,9 +804,9 @@
                         signatureOfData: 20, signatureOfEncrypted: 21
             },
             INDEX_TO_LABEL: {
-                        0: "aesEncrypted", 1: "hmac",
-                        10: "rsaEncrypted",
-                        20: "signatureOfData", 21: "signatureOfEncrypted"
+                        0: &quot;aesEncrypted&quot;, 1: &quot;hmac&quot;,
+                        10: &quot;rsaEncrypted&quot;,
+                        20: &quot;signatureOfData&quot;, 21: &quot;signatureOfEncrypted&quot;
             },
         
          
@@ -745,10 +823,10 @@
                 var numItems = 0;
                 for (var label in dict) {
                     if (!(label in this.LABEL_TO_INDEX)) {
-                        throw "Unsupported key: " + label;
+                        throw &quot;Unsupported key: &quot; + label;
                     }
                     if (!(dict[label].byteLength instanceof ArrayBuffer)) {
-                        throw "Value is not ArrayBuffer: " + label;
+                        throw &quot;Value is not ArrayBuffer: &quot; + label;
                     }
                     size += 5; //1 byte for key, 4 bytes for size
                     size += dict[label].byteLength;
@@ -788,14 +866,14 @@
                 var offset = 0;
                 var version = view.getUint8(offset);
                 offset++;
-                while (offset < buffer.byteLength) {
+                while (offset &lt; buffer.byteLength) {
                     var index = view.getUint8(offset);
                     var label = this.INDEX_TO_LABEL[index];
                     var size = view.getUint32(offset + 1);
                     
-                    // make sure we don't over allocate
-                    if (size > (buffer.byteLength - offset + 5)) {
-                        throw "Incorrect size " + size + buffer.byteLength;
+                    // make sure we don&#x27;t over allocate
+                    if (size &gt; (buffer.byteLength - offset + 5)) {
+                        throw &quot;Incorrect size &quot; + size + buffer.byteLength;
                     }
                     var data = new Uint8Array(view.buffer, offset + 5 , size);
                     offset += 5 + data.length;
@@ -809,14 +887,14 @@
     var dbUtil = {
         _version: 1,
         _openDB: function(onError, onSuccess, func) {
-            var request = indexedDB.open("simplecrypto", this._version);
+            var request = indexedDB.open(&quot;simplecrypto&quot;, this._version);
 
             request.onupgradeneeded = function (e) {
                 var db = e.target.result;
                 e.target.transaction.onerror = function (event) {
-                    console.log("transaction failure", event);
+                    console.log(&quot;transaction failure&quot;, event);
                 };
-                db.createObjectStore("keys");
+                db.createObjectStore(&quot;keys&quot;);
             };
 
             request.onsuccess = function (e) {
@@ -825,52 +903,70 @@
                 func(db, function() {
                     db.close();
                 })
-                db.transaction(["keys"], "readwrite").objectStore("keys").get("RSA");
+                db.transaction([&quot;keys&quot;], &quot;readwrite&quot;).objectStore(&quot;keys&quot;).get(&quot;RSA&quot;);
             };
 
             request.onerror = function (event) {
-                onError("Error opening DB", event);
+                onError(&quot;Error opening DB&quot;, event);
             };
         },   
         put: function(key, value, onError, onSuccess) {
             this._openDB(onError, onSuccess, function(db, closeDB) {
-                var request = db.transaction(["keys"], "readwrite").objectStore("keys").put(value, key);
+                var request = db.transaction([&quot;keys&quot;], &quot;readwrite&quot;).objectStore(&quot;keys&quot;).put(value, key);
                 request.onsuccess = function(){
                     closeDB();
                     onSuccess();
                 };
                 request.onerror = function(event) {
                     closeDB();
-                    onError("Error storing value", event);
+                    onError(&quot;Error storing value&quot;, event);
                 };
             });
         },
         get: function(key, onError, onSuccess) {
             this._openDB(onError, onSuccess, function(db, closeDB) {
-                var request = db.transaction(["keys"], "readonly").objectStore("keys").get(key);
+                var request = db.transaction([&quot;keys&quot;], &quot;readonly&quot;).objectStore(&quot;keys&quot;).get(key);
                 request.onsuccess = function(){
                     closeDB();
                     onSuccess(request.result);
                 };
                 request.onerror = function(event) {
                     closeDB();
-                    onError("Error storing value", event);
+                    onError(&quot;Error storing value&quot;, event);
                 };
             });
         },
         delete: function(key, onError, onSuccess) {
             this._openDB(onError, onSuccess, function(db, closeDB) {
-                var request = db.transaction(["keys"], "readwrite").objectStore("keys").delete(key);
+                var request = db.transaction([&quot;keys&quot;], &quot;readwrite&quot;).objectStore(&quot;keys&quot;).delete(key);
                 request.onsuccess = function(){
                     closeDB();
                     onSuccess(request.result);
                 };
                 request.onerror = function(event) {
                     closeDB();
-                    onError("Error storing value", event);
+                    onError(&quot;Error storing value&quot;, event);
                 };
             });
         }
     }
     return simpleCrypto;
 }));
+    </pre>
+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../assets/vendor/prettify/prettify-min.js"></script>
+<script>prettyPrint();</script>
+<script src="../assets/js/yui-prettify.js"></script>
+<script src="../assets/../api.js"></script>
+<script src="../assets/js/api-filter.js"></script>
+<script src="../assets/js/api-list.js"></script>
+<script src="../assets/js/api-search.js"></script>
+<script src="../assets/js/apidocs.js"></script>
+</body>
+</html>

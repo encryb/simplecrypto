@@ -1,0 +1,458 @@
+{
+    "project": {
+        "name": "simplecrypto.js",
+        "description": "Simple Crypto Library build on WebCrypto",
+        "version": "0.0.2",
+        "url": "https://github.com/encryb/simplecrypto",
+        "logo": "https://www.encryb.com/img/crib-md.png"
+    },
+    "files": {
+        "src\\simplecrypto.js": {
+            "name": "src\\simplecrypto.js",
+            "modules": {
+                "simpleCrypto": 1
+            },
+            "classes": {
+                "storage": 1,
+                "asym": 1,
+                "pack": 1
+            },
+            "fors": {},
+            "namespaces": {}
+        }
+    },
+    "modules": {
+        "simpleCrypto": {
+            "name": "simpleCrypto",
+            "submodules": {},
+            "classes": {
+                "storage": 1,
+                "asym": 1,
+                "pack": 1
+            },
+            "fors": {},
+            "namespaces": {},
+            "tag": "module",
+            "file": "src\\simplecrypto.js",
+            "line": 707,
+            "description": "Simple Crypto Javascript library built on WebCrypto"
+        }
+    },
+    "classes": {
+        "storage": {
+            "name": "storage",
+            "shortname": "storage",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": [],
+            "module": "simpleCrypto",
+            "namespace": "",
+            "file": "src\\simplecrypto.js",
+            "line": 396,
+            "description": "Secure CryptoKey storage"
+        },
+        "asym": {
+            "name": "asym",
+            "shortname": "asym",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": [],
+            "module": "simpleCrypto",
+            "namespace": "",
+            "file": "src\\simplecrypto.js",
+            "line": 438,
+            "description": "Asymmetric Encryption"
+        },
+        "pack": {
+            "name": "pack",
+            "shortname": "pack",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": [],
+            "module": "simpleCrypto",
+            "namespace": "",
+            "file": "src\\simplecrypto.js",
+            "line": 707,
+            "description": "Encoding/Decoding for encrypted data transport"
+        }
+    },
+    "classitems": [
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 401,
+            "description": "Get key from secure storage",
+            "itemtype": "method",
+            "name": "get",
+            "params": [
+                {
+                    "name": "keyId",
+                    "description": "- Key Id",
+                    "type": "String"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if get fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with CryptoKey if get succeeds",
+                    "type": "Function"
+                }
+            ],
+            "class": "storage",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 412,
+            "description": "Put key in secure storage",
+            "itemtype": "method",
+            "name": "put",
+            "params": [
+                {
+                    "name": "keyId",
+                    "description": "- Key Id",
+                    "type": "String"
+                },
+                {
+                    "name": "key",
+                    "description": "- key to be stored",
+                    "type": "CryptoKey"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if put fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called if put succeeds",
+                    "type": "Function"
+                }
+            ],
+            "class": "storage",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 425,
+            "description": "Delete key from secure storage",
+            "itemtype": "method",
+            "name": "delete",
+            "params": [
+                {
+                    "name": "keyId",
+                    "description": "- Key Id",
+                    "type": "String"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if delete fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called if delete succeeds",
+                    "type": "Function"
+                }
+            ],
+            "class": "storage",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 443,
+            "description": "Generate RSA encryption and signature keys",
+            "itemtype": "method",
+            "name": "generateKeys",
+            "params": [
+                {
+                    "name": "onError",
+                    "description": "- called with error details if generate fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with {encrypt: ... , sign: ...} if generate succeeds",
+                    "type": "Function"
+                }
+            ],
+            "class": "asym",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 458,
+            "description": "Generate RSA encryption keys. Private CryptoKey is not exportable, and can be stored safely.",
+            "itemtype": "method",
+            "name": "generateEncryptKey",
+            "params": [
+                {
+                    "name": "onError",
+                    "description": "- called with error details if generate fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with {privateKey: CryptoKey, publicKey: CryptoKey, privateJwk: JWK, publicJwk: JWK}",
+                    "type": "Function"
+                }
+            ],
+            "class": "asym",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 482,
+            "description": "Generate RSA signature keys. Private CryptoKey is not exportable, and can be stored safely.",
+            "itemtype": "method",
+            "name": "generateSignKey",
+            "params": [
+                {
+                    "name": "onError",
+                    "description": "- called with error details if generate fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with {privateKey: CryptoKey, publicKey: CryptoKey, privateJwk: JWK, publicJwk: JWK}",
+                    "type": "Function"
+                }
+            ],
+            "class": "asym",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 507,
+            "description": "Decrypt. For large payloads, keys are RSA decrypted and content is AES decrypted. Otherwise, content is RSA decrypted.",
+            "itemtype": "method",
+            "name": "decrypt",
+            "params": [
+                {
+                    "name": "decryptKey",
+                    "description": "- RSA encryption private key",
+                    "type": "CryptoKey"
+                },
+                {
+                    "name": "UNKNOWN",
+                    "description": "",
+                    "type": "Object"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if decrypt fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with decrypted ArrayBuffer",
+                    "type": "Function"
+                }
+            ],
+            "class": "asym",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 527,
+            "description": "Verify and Decrypt. For large payloads, AES keys are RSA decrypted and content is AES decrypted. Otherwise, content is RSA decrypted.\nThe order of operations is: verify encrypted content/keys, decrypt, verify decrypted content/keys, AES decrypt (if required).",
+            "itemtype": "method",
+            "name": "verifyAndDecrypt",
+            "params": [
+                {
+                    "name": "decryptKey",
+                    "description": "- RSA encryption private key",
+                    "type": "CryptoKey"
+                },
+                {
+                    "name": "decryptKey",
+                    "description": "- RSA signature public key",
+                    "type": "CryptoKey"
+                },
+                {
+                    "name": "dict",
+                    "description": "- decoded encrypted object {rsaEncrypted:, signatureOfEncrypted:, signatureOfData:, aesEncrypted?:, hmac?: }",
+                    "type": "Object"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if decrypt fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with decrypted ArrayBuffer",
+                    "type": "Function"
+                }
+            ],
+            "class": "asym",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 577,
+            "description": "Decrypt. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted. \n\"Large\" trashhold is defined in config.",
+            "itemtype": "method",
+            "name": "encrypt",
+            "params": [
+                {
+                    "name": "encryptKey",
+                    "description": "- RSA encryption public key",
+                    "type": "CryptoKey"
+                },
+                {
+                    "name": "data",
+                    "description": "- Data to encrypt",
+                    "type": "Uint8Array | ArrayBuffer"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if encryption fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with {rsaEncrypted: , aesEncrypted?: , hmacEncrypted?:}",
+                    "type": "Function"
+                }
+            ],
+            "class": "asym",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 592,
+            "description": "Encrypt and Sign. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted.\n\"Large\" trashhold is defined in config.\nThe order of operations is: AES (encrypt if required), encrypt content/keys, sign content/keys, sign encrypted content/keys.",
+            "itemtype": "method",
+            "name": "encryptAndSign",
+            "params": [
+                {
+                    "name": "decryptKey",
+                    "description": "- RSA encryption private key",
+                    "type": "CryptoKey"
+                },
+                {
+                    "name": "decryptKey",
+                    "description": "- RSA signature public key",
+                    "type": "CryptoKey"
+                },
+                {
+                    "name": "dict",
+                    "description": "- decoded encrypted object {rsaEncrypted:, signatureOfEncrypted:, signatureOfData:, aesEncrypted?:, hmac?: }",
+                    "type": "Object"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if decrypt fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with decrypted ArrayBuffer",
+                    "type": "Function"
+                }
+            ],
+            "class": "asym",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 624,
+            "itemtype": "method",
+            "name": "importKeys",
+            "params": [
+                {
+                    "name": "onError",
+                    "description": "- called with error details if the generation fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with {aesKey: raw key, hmacKey: raw key, aesKeyObj: CryptoKey, hmacKeyObj: CryptoKey}",
+                    "type": "Function"
+                }
+            ],
+            "class": "asym",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 642,
+            "itemtype": "method",
+            "name": "importKeys",
+            "params": [
+                {
+                    "name": "keys",
+                    "description": "- {aesKey: raw key, hmacKey: raw key}. After import CryptoKeys aesKeyObj and hmacKeyObj are added to keys object.",
+                    "type": "Object"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if the import fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called without arguments once import completes",
+                    "type": "Function"
+                }
+            ],
+            "class": "asym",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 729,
+            "description": "Encode encrypted data",
+            "itemtype": "method",
+            "name": "encode",
+            "params": [
+                {
+                    "name": "dict",
+                    "description": "- Keys depend on type of encryption, all values are ArrayBuffers (as returned by WebCrypto)",
+                    "type": "Object"
+                }
+            ],
+            "return": {
+                "description": "- Encoded data",
+                "type": "ArrayBuffer"
+            },
+            "class": "pack",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 771,
+            "description": "Decode encrypted data. Decoding should be a zero copy operation, since all returned Uint8Arrays point to the original buffer",
+            "itemtype": "method",
+            "name": "decode",
+            "params": [
+                {
+                    "name": "buffer",
+                    "description": "- Encoded data",
+                    "type": "ArrayBuffer"
+                }
+            ],
+            "return": {
+                "description": "- Keys depend on type of encryption, all values are Uint8Arrays",
+                "type": "Object"
+            },
+            "class": "pack",
+            "module": "simpleCrypto"
+        }
+    ],
+    "warnings": [
+        {
+            "message": "param name missing: {Object}",
+            "line": " src\\simplecrypto.js:507"
+        }
+    ]
+}
