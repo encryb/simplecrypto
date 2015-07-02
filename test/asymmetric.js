@@ -23,12 +23,12 @@ describe('asymmetric', function() {
         });
     });
     it('store keys', function(done) {
-        simpleCrypto.db.put("privateKey", gKeys.privateKey, logError.bind(null, done), function(){
+        simpleCrypto.storage.put("privateKey", gKeys.privateKey, logError.bind(null, done), function(){
             done();
         });
     });
     it('load keys', function(done) {
-        simpleCrypto.db.get("privateKey", logError.bind(null, done), function(privateKey){
+        simpleCrypto.storage.get("privateKey", logError.bind(null, done), function(privateKey){
             gPrivateKey = privateKey;
             done();
         });
@@ -63,12 +63,12 @@ describe('asymmetricLarge', function() {
         });
     });
     it('store keys', function(done) {
-        simpleCrypto.db.put("privateKey", gKeys.privateKey, logError.bind(null, done), function(){
+        simpleCrypto.storage.put("privateKey", gKeys.privateKey, logError.bind(null, done), function(){
             done();
         });
     });
     it('load keys', function(done) {
-        simpleCrypto.db.get("privateKey", logError.bind(null, done), function(privateKey){
+        simpleCrypto.storage.get("privateKey", logError.bind(null, done), function(privateKey){
             gPrivateKey = privateKey;
             done();
         });
@@ -112,11 +112,12 @@ describe('asymmetricWithSign', function() {
         });
     });
     it('pack', function() {
-        gPacked = simpleCrypto.encoding.encode(gEncrypted);
+        console.log("Hello", gEncrypted);
+        gPacked = simpleCrypto.pack.encode(gEncrypted);
         expect(gPacked).not.toBeUndefined();
     });
     it('unpack', function() {
-        gUnpacked = simpleCrypto.encoding.decode(gPacked);
+        gUnpacked = simpleCrypto.pack.decode(gPacked);
        // console.log("UNPACKED", new Uint8Array(gUnpacked.cipherdata));
        // console.log("Encrypted", new Uint8Array(gEncrypted.cipherdata));
     });
@@ -151,11 +152,11 @@ describe('asymmetricWithSignLarge', function() {
         });
     });
     it('pack', function() {
-        gPacked = simpleCrypto.encoding.encode(gEncrypted);
+        gPacked = simpleCrypto.pack.encode(gEncrypted);
         expect(gPacked).not.toBeUndefined();
     });
     it('unpack', function() {
-        gUnpacked = simpleCrypto.encoding.decode(gPacked);
+        gUnpacked = simpleCrypto.pack.decode(gPacked);
        // console.log("UNPACKED", new Uint8Array(gUnpacked.cipherdata));
        // console.log("Encrypted", new Uint8Array(gEncrypted.cipherdata));
     });

@@ -767,7 +767,7 @@
                     if (!(label in this.LABEL_TO_INDEX)) {
                         throw "Unsupported key: " + label;
                     }
-                    if (!(dict[label].byteLength instanceof ArrayBuffer)) {
+                    if (!(dict[label] instanceof ArrayBuffer)) {
                         throw "Value is not ArrayBuffer: " + label;
                     }
                     size += 5; //1 byte for key, 4 bytes for size
