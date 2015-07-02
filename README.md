@@ -6,13 +6,13 @@ Simple Javascript cryptography library wraps incompatible WebCrypto implementati
 utilizes encryption algorithms that all WebCrypto implmentations support and provides 
 a much simpler interface. 
 
-Usage
-===
+## Examples
 
 
 
-License
-===
+##Documentation
+[API](http://rawgit.com/encryb/simplecrypto/master/docs/modules/simpleCrypto.html)
 
+##License
 Apache 2.0
 
