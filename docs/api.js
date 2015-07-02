@@ -3,7 +3,8 @@ YUI.add("yuidoc-meta", function(Y) {
     "classes": [
         "asym",
         "pack",
-        "storage"
+        "storage",
+        "sym"
     ],
     "modules": [
         "simpleCrypto"

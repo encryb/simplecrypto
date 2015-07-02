@@ -15,6 +15,7 @@
             "classes": {
                 "storage": 1,
                 "asym": 1,
+                "sym": 1,
                 "pack": 1
             },
             "fors": {},
@@ -28,6 +29,7 @@
             "classes": {
                 "storage": 1,
                 "asym": 1,
+                "sym": 1,
                 "pack": 1
             },
             "fors": {},
@@ -56,6 +58,20 @@
         "asym": {
             "name": "asym",
             "shortname": "asym",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": [],
+            "module": "simpleCrypto",
+            "namespace": "",
+            "file": "src\\simplecrypto.js",
+            "line": 438,
+            "description": "Asymmetric Encryption"
+        },
+        "sym": {
+            "name": "sym",
+            "shortname": "sym",
             "classitems": [],
             "plugins": [],
             "extensions": [],
@@ -380,7 +396,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "asym",
+            "class": "sym",
             "module": "simpleCrypto"
         },
         {
@@ -405,7 +421,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "asym",
+            "class": "sym",
             "module": "simpleCrypto"
         },
         {
@@ -428,7 +444,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "asym",
+            "class": "sym",
             "module": "simpleCrypto"
         },
         {
@@ -456,7 +472,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "asym",
+            "class": "sym",
             "module": "simpleCrypto"
         },
         {
@@ -484,7 +500,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "asym",
+            "class": "sym",
             "module": "simpleCrypto"
         },
         {

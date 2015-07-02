@@ -621,7 +621,7 @@
 
         /**
          * Symmetric Encryption
-         * @class asym
+         * @class sym
          */
         sym: {
             
