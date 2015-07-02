@@ -35,7 +35,7 @@
             "tag": "module",
             "file": "src\\simplecrypto.js",
             "line": 733,
-            "description": "Simple Crypto Javascript library built on WebCrypto"
+            "description": "Simple Crypto Javascript library built on WebCrypto and IndexedDB"
         }
     },
     "classes": {

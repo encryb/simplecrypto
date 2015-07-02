@@ -12,7 +12,7 @@ YUI.add("yuidoc-meta", function(Y) {
         {
             "displayName": "simpleCrypto",
             "name": "simpleCrypto",
-            "description": "Simple Crypto Javascript library built on WebCrypto"
+            "description": "Simple Crypto Javascript library built on WebCrypto and IndexedDB"
         }
     ]
 } };

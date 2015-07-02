@@ -472,7 +472,7 @@
 
     
     /**
-     * Simple Crypto Javascript library built on WebCrypto
+     * Simple Crypto Javascript library built on WebCrypto and IndexedDB
      * @module simpleCrypto
      */
     var simpleCrypto = {
@@ -851,7 +851,7 @@
                     if (!(label in this.LABEL_TO_INDEX)) {
                         throw &quot;Unsupported key: &quot; + label;
                     }
-                    if (!(dict[label].byteLength instanceof ArrayBuffer)) {
+                    if (!(dict[label] instanceof ArrayBuffer)) {
                         throw &quot;Value is not ArrayBuffer: &quot; + label;
                     }
                     size += 5; //1 byte for key, 4 bytes for size

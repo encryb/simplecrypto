@@ -388,7 +388,7 @@
 
     
     /**
-     * Simple Crypto Javascript library built on WebCrypto
+     * Simple Crypto Javascript library built on WebCrypto and IndexedDB
      * @module simpleCrypto
      */
     var simpleCrypto = {
