@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>asym - simplecrypto.js</title>
+    <title>Encryption Asymmetric - simplecrypto.js</title>
     <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
     <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
     <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
@@ -38,10 +38,10 @@
                 
                         <div id="api-tabview-panel">
                             <ul id="api-classes" class="apis classes">
-                                <li><a href="../classes/asym.html">asym</a></li>
-                                <li><a href="../classes/pack.html">pack</a></li>
-                                <li><a href="../classes/storage.html">storage</a></li>
-                                <li><a href="../classes/sym.html">sym</a></li>
+                                <li><a href="../classes/Encryption Asymmetric.html">Encryption Asymmetric</a></li>
+                                <li><a href="../classes/Encryption Symmetric.html">Encryption Symmetric</a></li>
+                                <li><a href="../classes/Key Storage.html">Key Storage</a></li>
+                                <li><a href="../classes/Packaging.html">Packaging</a></li>
                             </ul>
                 
                             <ul id="api-modules" class="apis modules">
@@ -79,7 +79,7 @@
             <div class="apidocs">
                 <div id="docs-main">
                     <div class="content">
-<h1>asym Class</h1>
+<h1>Encryption Asymmetric Class</h1>
 <div class="box meta">
 
 
@@ -114,31 +114,31 @@
 
                     <ul class="index-list methods">
                             <li class="index-item method">
-                                <a href="#method_decrypt">decrypt</a>
+                                <a href="#method_asym.decrypt">asym.decrypt</a>
 
                             </li>
                             <li class="index-item method">
-                                <a href="#method_encrypt">encrypt</a>
+                                <a href="#method_asym.encrypt">asym.encrypt</a>
 
                             </li>
                             <li class="index-item method">
-                                <a href="#method_encryptAndSign">encryptAndSign</a>
+                                <a href="#method_asym.encryptAndSign">asym.encryptAndSign</a>
 
                             </li>
                             <li class="index-item method">
-                                <a href="#method_generateEncryptKey">generateEncryptKey</a>
+                                <a href="#method_asym.generateEncryptKey">asym.generateEncryptKey</a>
 
                             </li>
                             <li class="index-item method">
-                                <a href="#method_generateKeys">generateKeys</a>
+                                <a href="#method_asym.generateKeys">asym.generateKeys</a>
 
                             </li>
                             <li class="index-item method">
-                                <a href="#method_generateSignKey">generateSignKey</a>
+                                <a href="#method_asym.generateSignKey">asym.generateSignKey</a>
 
                             </li>
                             <li class="index-item method">
-                                <a href="#method_verifyAndDecrypt">verifyAndDecrypt</a>
+                                <a href="#method_asym.verifyAndDecrypt">asym.verifyAndDecrypt</a>
 
                             </li>
                     </ul>
@@ -151,8 +151,8 @@
             <div id="methods" class="api-class-tabpanel">
                 <h2 class="off-left">Methods</h2>
 
-<div id="method_decrypt" class="method item">
-    <h3 class="name"><code>decrypt</code></h3>
+<div id="method_asym.decrypt" class="method item">
+    <h3 class="name"><code>asym.decrypt</code></h3>
 
         <div class="args">
             <span class="paren">(</span><ul class="args-list inline commas">
@@ -252,8 +252,8 @@
 
 
 </div>
-<div id="method_encrypt" class="method item">
-    <h3 class="name"><code>encrypt</code></h3>
+<div id="method_asym.encrypt" class="method item">
+    <h3 class="name"><code>asym.encrypt</code></h3>
 
         <div class="args">
             <span class="paren">(</span><ul class="args-list inline commas">
@@ -290,7 +290,7 @@
     </div>
 
     <div class="description">
-        <p>Decrypt. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted.
+        <p>Encrypt. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted.
 &quot;Large&quot; trashhold is defined in config.</p>
 
     </div>
@@ -357,8 +357,8 @@
 
 
 </div>
-<div id="method_encryptAndSign" class="method item">
-    <h3 class="name"><code>encryptAndSign</code></h3>
+<div id="method_asym.encryptAndSign" class="method item">
+    <h3 class="name"><code>asym.encryptAndSign</code></h3>
 
         <div class="args">
             <span class="paren">(</span><ul class="args-list inline commas">
@@ -479,8 +479,8 @@ The order of operations is: AES (encrypt if required), encrypt content/keys, sig
 
 
 </div>
-<div id="method_generateEncryptKey" class="method item">
-    <h3 class="name"><code>generateEncryptKey</code></h3>
+<div id="method_asym.generateEncryptKey" class="method item">
+    <h3 class="name"><code>asym.generateEncryptKey</code></h3>
 
         <div class="args">
             <span class="paren">(</span><ul class="args-list inline commas">
@@ -551,8 +551,8 @@ The order of operations is: AES (encrypt if required), encrypt content/keys, sig
 
 
 </div>
-<div id="method_generateKeys" class="method item">
-    <h3 class="name"><code>generateKeys</code></h3>
+<div id="method_asym.generateKeys" class="method item">
+    <h3 class="name"><code>asym.generateKeys</code></h3>
 
         <div class="args">
             <span class="paren">(</span><ul class="args-list inline commas">
@@ -623,8 +623,8 @@ The order of operations is: AES (encrypt if required), encrypt content/keys, sig
 
 
 </div>
-<div id="method_generateSignKey" class="method item">
-    <h3 class="name"><code>generateSignKey</code></h3>
+<div id="method_asym.generateSignKey" class="method item">
+    <h3 class="name"><code>asym.generateSignKey</code></h3>
 
         <div class="args">
             <span class="paren">(</span><ul class="args-list inline commas">
@@ -695,8 +695,8 @@ The order of operations is: AES (encrypt if required), encrypt content/keys, sig
 
 
 </div>
-<div id="method_verifyAndDecrypt" class="method item">
-    <h3 class="name"><code>verifyAndDecrypt</code></h3>
+<div id="method_asym.verifyAndDecrypt" class="method item">
+    <h3 class="name"><code>asym.verifyAndDecrypt</code></h3>
 
         <div class="args">
             <span class="paren">(</span><ul class="args-list inline commas">

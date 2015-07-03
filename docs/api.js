@@ -1,10 +1,10 @@
 YUI.add("yuidoc-meta", function(Y) {
    Y.YUIDoc = { meta: {
     "classes": [
-        "asym",
-        "pack",
-        "storage",
-        "sym"
+        "Encryption Asymmetric",
+        "Encryption Symmetric",
+        "Key Storage",
+        "Packaging"
     ],
     "modules": [
         "simpleCrypto"

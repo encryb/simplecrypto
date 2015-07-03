@@ -13,10 +13,10 @@
                 "simpleCrypto": 1
             },
             "classes": {
-                "storage": 1,
-                "asym": 1,
-                "sym": 1,
-                "pack": 1
+                "Key Storage": 1,
+                "Encryption Asymmetric": 1,
+                "Encryption Symmetric": 1,
+                "Packaging": 1
             },
             "fors": {},
             "namespaces": {}
@@ -27,23 +27,23 @@
             "name": "simpleCrypto",
             "submodules": {},
             "classes": {
-                "storage": 1,
-                "asym": 1,
-                "sym": 1,
-                "pack": 1
+                "Key Storage": 1,
+                "Encryption Asymmetric": 1,
+                "Encryption Symmetric": 1,
+                "Packaging": 1
             },
             "fors": {},
             "namespaces": {},
             "tag": "module",
             "file": "src\\simplecrypto.js",
-            "line": 733,
+            "line": 736,
             "description": "Simple Crypto Javascript library built on WebCrypto and IndexedDB"
         }
     },
     "classes": {
-        "storage": {
-            "name": "storage",
-            "shortname": "storage",
+        "Key Storage": {
+            "name": "Key Storage",
+            "shortname": "Key Storage",
             "classitems": [],
             "plugins": [],
             "extensions": [],
@@ -55,9 +55,9 @@
             "line": 396,
             "description": "Secure CryptoKey storage"
         },
-        "asym": {
-            "name": "asym",
-            "shortname": "asym",
+        "Encryption Asymmetric": {
+            "name": "Encryption Asymmetric",
+            "shortname": "Encryption Asymmetric",
             "classitems": [],
             "plugins": [],
             "extensions": [],
@@ -69,9 +69,9 @@
             "line": 438,
             "description": "Asymmetric Encryption"
         },
-        "sym": {
-            "name": "sym",
-            "shortname": "sym",
+        "Encryption Symmetric": {
+            "name": "Encryption Symmetric",
+            "shortname": "Encryption Symmetric",
             "classitems": [],
             "plugins": [],
             "extensions": [],
@@ -83,9 +83,9 @@
             "line": 622,
             "description": "Symmetric Encryption"
         },
-        "pack": {
-            "name": "pack",
-            "shortname": "pack",
+        "Packaging": {
+            "name": "Packaging",
+            "shortname": "Packaging",
             "classitems": [],
             "plugins": [],
             "extensions": [],
@@ -94,7 +94,7 @@
             "module": "simpleCrypto",
             "namespace": "",
             "file": "src\\simplecrypto.js",
-            "line": 733,
+            "line": 736,
             "description": "Encoding/Decoding for encrypted data transport"
         }
     },
@@ -104,7 +104,7 @@
             "line": 401,
             "description": "Get key from secure storage",
             "itemtype": "method",
-            "name": "get",
+            "name": "storage.get",
             "params": [
                 {
                     "name": "keyId",
@@ -122,7 +122,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "storage",
+            "class": "Key Storage",
             "module": "simpleCrypto"
         },
         {
@@ -130,7 +130,7 @@
             "line": 412,
             "description": "Put key in secure storage",
             "itemtype": "method",
-            "name": "put",
+            "name": "storage.put",
             "params": [
                 {
                     "name": "keyId",
@@ -153,7 +153,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "storage",
+            "class": "Key Storage",
             "module": "simpleCrypto"
         },
         {
@@ -161,7 +161,7 @@
             "line": 425,
             "description": "Delete key from secure storage",
             "itemtype": "method",
-            "name": "delete",
+            "name": "storage.delete",
             "params": [
                 {
                     "name": "keyId",
@@ -179,7 +179,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "storage",
+            "class": "Key Storage",
             "module": "simpleCrypto"
         },
         {
@@ -187,7 +187,7 @@
             "line": 443,
             "description": "Generate RSA encryption and signature keys",
             "itemtype": "method",
-            "name": "generateKeys",
+            "name": "asym.generateKeys",
             "params": [
                 {
                     "name": "onError",
@@ -200,7 +200,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "asym",
+            "class": "Encryption Asymmetric",
             "module": "simpleCrypto"
         },
         {
@@ -208,7 +208,7 @@
             "line": 458,
             "description": "Generate RSA encryption keys. Private CryptoKey is not exportable, and can be stored safely.",
             "itemtype": "method",
-            "name": "generateEncryptKey",
+            "name": "asym.generateEncryptKey",
             "params": [
                 {
                     "name": "onError",
@@ -221,7 +221,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "asym",
+            "class": "Encryption Asymmetric",
             "module": "simpleCrypto"
         },
         {
@@ -229,7 +229,7 @@
             "line": 482,
             "description": "Generate RSA signature keys. Private CryptoKey is not exportable, and can be stored safely.",
             "itemtype": "method",
-            "name": "generateSignKey",
+            "name": "asym.generateSignKey",
             "params": [
                 {
                     "name": "onError",
@@ -242,7 +242,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "asym",
+            "class": "Encryption Asymmetric",
             "module": "simpleCrypto"
         },
         {
@@ -250,7 +250,7 @@
             "line": 507,
             "description": "Decrypt. For large payloads, keys are RSA decrypted and content is AES decrypted. Otherwise, content is RSA decrypted.",
             "itemtype": "method",
-            "name": "decrypt",
+            "name": "asym.decrypt",
             "params": [
                 {
                     "name": "decryptKey",
@@ -273,7 +273,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "asym",
+            "class": "Encryption Asymmetric",
             "module": "simpleCrypto"
         },
         {
@@ -281,7 +281,7 @@
             "line": 527,
             "description": "Verify and Decrypt. For large payloads, AES keys are RSA decrypted and content is AES decrypted. Otherwise, content is RSA decrypted.\nThe order of operations is: verify encrypted content/keys, decrypt, verify decrypted content/keys, AES decrypt (if required).",
             "itemtype": "method",
-            "name": "verifyAndDecrypt",
+            "name": "asym.verifyAndDecrypt",
             "params": [
                 {
                     "name": "decryptKey",
@@ -309,15 +309,15 @@
                     "type": "Function"
                 }
             ],
-            "class": "asym",
+            "class": "Encryption Asymmetric",
             "module": "simpleCrypto"
         },
         {
             "file": "src\\simplecrypto.js",
             "line": 577,
-            "description": "Decrypt. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted. \n\"Large\" trashhold is defined in config.",
+            "description": "Encrypt. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted. \n\"Large\" trashhold is defined in config.",
             "itemtype": "method",
-            "name": "encrypt",
+            "name": "asym.encrypt",
             "params": [
                 {
                     "name": "encryptKey",
@@ -340,7 +340,7 @@
                     "type": "Function"
                 }
             ],
-            "class": "asym",
+            "class": "Encryption Asymmetric",
             "module": "simpleCrypto"
         },
         {
@@ -348,7 +348,7 @@
             "line": 592,
             "description": "Encrypt and Sign. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted.\n\"Large\" trashhold is defined in config.\nThe order of operations is: AES (encrypt if required), encrypt content/keys, sign content/keys, sign encrypted content/keys.",
             "itemtype": "method",
-            "name": "encryptAndSign",
+            "name": "asym.encryptAndSign",
             "params": [
                 {
                     "name": "decryptKey",
@@ -376,14 +376,14 @@
                     "type": "Function"
                 }
             ],
-            "class": "asym",
+            "class": "Encryption Asymmetric",
             "module": "simpleCrypto"
         },
         {
             "file": "src\\simplecrypto.js",
             "line": 628,
             "itemtype": "method",
-            "name": "generateKeys",
+            "name": "sym.generateKeys",
             "params": [
                 {
                     "name": "onError",
@@ -396,14 +396,14 @@
                     "type": "Function"
                 }
             ],
-            "class": "sym",
+            "class": "Encryption Symmetric",
             "module": "simpleCrypto"
         },
         {
             "file": "src\\simplecrypto.js",
             "line": 646,
             "itemtype": "method",
-            "name": "importKeys",
+            "name": "sym.importKeys",
             "params": [
                 {
                     "name": "keys",
@@ -421,12 +421,14 @@
                     "type": "Function"
                 }
             ],
-            "class": "sym",
+            "class": "Encryption Symmetric",
             "module": "simpleCrypto"
         },
         {
             "file": "src\\simplecrypto.js",
             "line": 675,
+            "itemtype": "method",
+            "name": "sym.genKeysAndEncrypt",
             "params": [
                 {
                     "name": "data",
@@ -444,12 +446,14 @@
                     "type": "Function"
                 }
             ],
-            "class": "sym",
+            "class": "Encryption Symmetric",
             "module": "simpleCrypto"
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 689,
+            "line": 690,
+            "itemtype": "method",
+            "name": "sym.encrypt",
             "params": [
                 {
                     "name": "keys",
@@ -472,12 +476,14 @@
                     "type": "Function"
                 }
             ],
-            "class": "sym",
+            "class": "Encryption Symmetric",
             "module": "simpleCrypto"
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 715,
+            "line": 717,
+            "itemtype": "method",
+            "name": "sym.decrypt",
             "params": [
                 {
                     "name": "keys",
@@ -500,15 +506,15 @@
                     "type": "Function"
                 }
             ],
-            "class": "sym",
+            "class": "Encryption Symmetric",
             "module": "simpleCrypto"
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 755,
+            "line": 758,
             "description": "Encode encrypted data",
             "itemtype": "method",
-            "name": "encode",
+            "name": "pack.encode",
             "params": [
                 {
                     "name": "dict",
@@ -520,15 +526,15 @@
                 "description": "- Encoded data",
                 "type": "ArrayBuffer"
             },
-            "class": "pack",
+            "class": "Packaging",
             "module": "simpleCrypto"
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 797,
+            "line": 800,
             "description": "Decode encrypted data. Decoding should be a zero copy operation, since all returned Uint8Arrays point to the original buffer",
             "itemtype": "method",
-            "name": "decode",
+            "name": "pack.decode",
             "params": [
                 {
                     "name": "buffer",
@@ -540,7 +546,7 @@
                 "description": "- Keys depend on type of encryption, all values are Uint8Arrays",
                 "type": "Object"
             },
-            "class": "pack",
+            "class": "Packaging",
             "module": "simpleCrypto"
         }
     ],
@@ -548,18 +554,6 @@
         {
             "message": "param name missing: {Object}",
             "line": " src\\simplecrypto.js:507"
-        },
-        {
-            "message": "Missing item type",
-            "line": " src\\simplecrypto.js:675"
-        },
-        {
-            "message": "Missing item type",
-            "line": " src\\simplecrypto.js:689"
-        },
-        {
-            "message": "Missing item type",
-            "line": " src\\simplecrypto.js:715"
         }
     ]
 }

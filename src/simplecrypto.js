@@ -395,13 +395,13 @@
 
         /**
          * Secure CryptoKey storage
-         * @class storage
+         * @class Key Storage
          */
         storage: {
              /**
              * Get key from secure storage
              * 
-             * @method get
+             * @method storage.get
              * @param {String} keyId - Key Id
              * @param {function} onError - called with error details if get fails
              * @param {function} onSuccess - called with CryptoKey if get succeeds
@@ -412,7 +412,7 @@
             /**
              * Put key in secure storage
              * 
-             * @method put
+             * @method storage.put
              * @param {String} keyId - Key Id
              * @param {CryptoKey} key - key to be stored
              * @param {function} onError - called with error details if put fails
@@ -425,7 +425,7 @@
             /**
              * Delete key from secure storage
              * 
-             * @method delete
+             * @method storage.delete
              * @param {String} keyId - Key Id
              * @param {function} onError - called with error details if delete fails
              * @param {function} onSuccess - called if delete succeeds
@@ -437,13 +437,13 @@
         
         /**
          * Asymmetric Encryption
-         * @class asym
+         * @class Encryption Asymmetric
          */
         asym : {
             /**
              * Generate RSA encryption and signature keys
              * 
-             * @method generateKeys
+             * @method asym.generateKeys
              * @param {function} onError - called with error details if generate fails
              * @param {function} onSuccess - called with {encrypt: ... , sign: ...} if generate succeeds
              */
@@ -458,7 +458,7 @@
             /**
              * Generate RSA encryption keys. Private CryptoKey is not exportable, and can be stored safely.
              * 
-             * @method generateEncryptKey
+             * @method asym.generateEncryptKey
              * @param {function} onError - called with error details if generate fails
              * @param {function} onSuccess - called with {privateKey: CryptoKey, publicKey: CryptoKey, privateJwk: JWK, publicJwk: JWK} 
              */
@@ -482,7 +482,7 @@
             /**
              * Generate RSA signature keys. Private CryptoKey is not exportable, and can be stored safely.
              * 
-             * @method generateSignKey
+             * @method asym.generateSignKey
              * @param {function} onError - called with error details if generate fails
              * @param {function} onSuccess - called with {privateKey: CryptoKey, publicKey: CryptoKey, privateJwk: JWK, publicJwk: JWK} 
              */
@@ -507,7 +507,7 @@
             /**
              * Decrypt. For large payloads, keys are RSA decrypted and content is AES decrypted. Otherwise, content is RSA decrypted.
              * 
-             * @method decrypt
+             * @method asym.decrypt
              * @param {CryptoKey} decryptKey - RSA encryption private key
              * @param {Object} 
              * @param {function} onError - called with error details if decrypt fails
@@ -528,7 +528,7 @@
              * Verify and Decrypt. For large payloads, AES keys are RSA decrypted and content is AES decrypted. Otherwise, content is RSA decrypted.
              * The order of operations is: verify encrypted content/keys, decrypt, verify decrypted content/keys, AES decrypt (if required). 
              * 
-             * @method verifyAndDecrypt
+             * @method asym.verifyAndDecrypt
              * @param {CryptoKey} decryptKey - RSA encryption private key
              * @param {CryptoKey} decryptKey - RSA signature public key
              * @param {Object} dict - decoded encrypted object {rsaEncrypted:, signatureOfEncrypted:, signatureOfData:, aesEncrypted?:, hmac?: } 
@@ -575,10 +575,10 @@
             },
             
             /**
-             * Decrypt. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted. 
+             * Encrypt. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted. 
              * "Large" trashhold is defined in config.
              * 
-             * @method encrypt
+             * @method asym.encrypt
              * @param {CryptoKey} encryptKey - RSA encryption public key
              * @param {Uint8Array | ArrayBuffer} data - Data to encrypt 
              * @param {function} onError - called with error details if encryption fails
@@ -594,7 +594,7 @@
              * "Large" trashhold is defined in config.
              * The order of operations is: AES (encrypt if required), encrypt content/keys, sign content/keys, sign encrypted content/keys. 
              * 
-             * @method encryptAndSign
+             * @method asym.encryptAndSign
              * @param {CryptoKey} decryptKey - RSA encryption private key
              * @param {CryptoKey} decryptKey - RSA signature public key
              * @param {Object} dict - decoded encrypted object {rsaEncrypted:, signatureOfEncrypted:, signatureOfData:, aesEncrypted?:, hmac?: } 
@@ -621,13 +621,13 @@
 
         /**
          * Symmetric Encryption
-         * @class sym
+         * @class Encryption Symmetric
          */
         sym: {
             
             /** Generate random AES and HMAC keys
              *
-             * @method generateKeys
+             * @method sym.generateKeys
              * @param {function} onError - called with error details if the generation fails
              * @param {function} onSuccess - called with {aesKey: raw key, hmacKey: raw key, aesKeyObj: CryptoKey, hmacKeyObj: CryptoKey}
              */
@@ -645,7 +645,7 @@
             
             /** Convert raw AES and HMAC keys into WebCrypto CryptoKey objects
              *
-             * @method importKeys
+             * @method sym.importKeys
              * @param {Object} keys - {aesKey: raw key, hmacKey: raw key}. After import CryptoKeys aesKeyObj and hmacKeyObj are added to keys object.
              * @param {function} onError - called with error details if the import fails
              * @param {function} onSuccess - called without arguments once import completes
@@ -674,6 +674,7 @@
             
             /** Generate random AES and HMAC keys and encrypt data. This utility function combines generateKeys and encrypt
              * 
+             * @method sym.genKeysAndEncrypt
              * @param {Uint8Array | ArrayBuffer} data - Data to encrypt
              * @param {function} onError - called with error details if key generation or encryption fail
              * @param {function} onSuccess - called with {keys: [see generateKeys output], data: [see encrypt output]) 
@@ -688,6 +689,7 @@
             
             /** Generate random AES and HMAC keys and encrypt data. This utility function combines generateKeys and encrypt
              *
+             * @method sym.encrypt
              * @param {Object} keys - AES and HMAC keys. Also optional IV (otherwise random is generated)
              * @param {Uint8Array | ArrayBuffer} data - Data to encrypt
              * @param {function} onError - called with error details if key generation or encryption fail
@@ -714,6 +716,7 @@
 
             /** Decrypt
              *  
+             * @method sym.decrypt
              * @param {Object} keys - AES and HMAC keys. Also optional IV (otherwise random is generated)
              * @param {Uint8Array | ArrayBuffer} data - Data to encrypt
              * @param {function} onError - called with error details if key generation or encryption fail
@@ -732,7 +735,7 @@
         },
         /**
          * Encoding/Decoding for encrypted data transport
-         * @class pack
+         * @class Packaging
          */
         pack : {
                 
@@ -755,7 +758,7 @@
             /**
              * Encode encrypted data
              * 
-             * @method encode
+             * @method pack.encode
              * @param {Object} dict - Keys depend on type of encryption, all values are ArrayBuffers (as returned by WebCrypto)
              * @return {ArrayBuffer} - Encoded data
              */
@@ -797,7 +800,7 @@
             /**
              * Decode encrypted data. Decoding should be a zero copy operation, since all returned Uint8Arrays point to the original buffer
              * 
-             * @method decode
+             * @method pack.decode
              * @param {ArrayBuffer} buffer - Encoded data
              * @return {Object} - Keys depend on type of encryption, all values are Uint8Arrays
              */
