@@ -112,7 +112,6 @@ describe('asymmetricWithSign', function() {
         });
     });
     it('pack', function() {
-        console.log("Hello", gEncrypted);
         gPacked = simpleCrypto.pack.encode(gEncrypted);
         expect(gPacked).not.toBeUndefined();
     });
