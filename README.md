@@ -8,17 +8,17 @@ a much simpler interface.
 
 ## Supported Browsers
 
-(Desktop and mobile versions)
-Chrome 41+
-Firefox 37+
-Internet Explorer 11+
-Safari 8.1+ (RSA signing is not available due to a [WebKit bug](https://bugs.webkit.org/show_bug.cgi?id=144938))
+### (Desktop and mobile versions)
+* Chrome 41+
+* Firefox 37+
+* Internet Explorer 11+
+* Safari 8.1+ (RSA signing is not available due to a [WebKit bug](https://bugs.webkit.org/show_bug.cgi?id=144938))
 
 ## Examples
 
 ### Common
 ```javascript
-var data = new Uint9Array([5,4,3,2,1]);
+var data = new Uint8Array([5,4,3,2,1]);
 
 var logError = function() {
     console.log(arguments);

@@ -38,7 +38,13 @@
         rsaEncryptCipher: "RSA-OAEP",
         rsaEncryptHash: "SHA-1",
         rsaSignCipher: "RSASSA-PKCS1-v1_5",
-        rsaSignHash: "SHA-256"
+        rsaSignHash: "SHA-256",
+        
+        
+        pbkdf2: {
+            minIterations: 20000,
+            hash: "SHA-1"
+        }
     };
 
     function combineBuffers(buffer1, buffer2) {
@@ -72,6 +78,18 @@
         return new Uint8Array(chars);
     }
 
+    var random = {
+        get : function(max) {
+            var MAX_UINT16 = 65535;
+            if (max > MAX_UINT16 || max < 0) {
+                throw ("Invalid max value" + max);
+            }
+            var buffer = new Uint16Array(1);
+            window.crypto.getRandomValues(buffer);
+            return Math.floor(max * buffer[0] / MAX_UINT16);
+        }
+    };
+    
     var _sym = {
         generateKeyAES: function (onError, onSuccess) {                   
             wrap(window.crypto.subtle.generateKey(
@@ -179,9 +197,7 @@
                     data
                 ),
                 onError,
-                function (hmac) {
-                    onSuccess(hmac);
-                }
+                onSuccess
             );
         }, 
 
@@ -278,6 +294,7 @@
                 function (jwk) {
                     if (oldWebkit || oldIE) {
                         try {
+                            // TODO: need to add key type to JWK
                             var fixedJwk = JSON.parse(bytesToString(jwk));
                             onSuccess(fixedJwk);
                         }
@@ -384,6 +401,142 @@
                 
             simpleCrypto.sym.decrypt({aesKey: aesKey, hmacKey: hmacKey}, data, onError, onSuccess);
         }
+    },
+    _pbkdf2 = {
+         passwordToKey: function(password, onError, onSuccess) {
+            wrap(window.crypto.subtle.importKey(
+                    "raw",
+                    stringToBytes(password),
+                    {"name": "PBKDF2"},
+                    false,
+                    ["deriveBits"]
+                ),
+                onError,
+                onSuccess
+                );
+        },
+        deriveBits: function(key, length, options, onError, onSuccess) {
+            var salt = options.salt || window.crypto.getRandomValues(new Uint8Array(16));
+            var iterations = options.iterations || (random.get(4000) + config.pbkdf2.minIterations);
+            wrap(window.crypto.subtle.deriveBits(
+                    {
+                        name: "PBKDF2",
+                        salt: salt,
+                        iterations: iterations,
+                        hash: {name: config.pbkdf2.hash}
+                    },
+                    key,
+                    length
+                ),
+                onError,
+                function(array) {
+                    onSuccess({salt: salt, iterations: iterations, array: array})
+                }
+            )
+        },
+        importKeyHMAC: function(password, onError, onSuccess) {
+            wrap(window.crypto.subtle.importKey(
+                    "raw",
+                    stringToBytes(password),
+                    {
+                        name: "HMAC",
+                        hash: { name: config.pbkdf2.hash },
+                    },
+                    false,
+                    ["sign", "verify"]
+                ),
+                onError,
+                onSuccess
+            );
+        },
+        importKeyHMAC2: function(password, onError, onSuccess) {
+            wrap(window.crypto.subtle.importKey(
+                    "raw",
+                    password,
+                    {
+                        name: "HMAC",
+                        hash: { name: config.pbkdf2.hash },
+                    },
+                    false,
+                    ["sign", "verify"]
+                ),
+                onError,
+                onSuccess
+            );
+        },
+        signHMAC: function(key, data, onError, onSuccess) {
+            wrap(window.crypto.subtle.sign(
+                    {
+                        name: "HMAC",
+                        hash: { name: config.pbkdf2.hash },
+                    },
+                    key,
+                    data
+                ),
+                onError,
+                onSuccess
+            );
+        },
+        
+        ua2hex: function(ua) {
+            var h = '';
+            for (var i = 0; i < ua.length; i++) {
+                h += ua[i].toString(16) + " ";
+            }
+            return h;
+        },
+        
+        compatDerive: function(password, bitLength, options, onError, onSuccess) {
+            
+            var salt = options.salt || window.crypto.getRandomValues(new Uint8Array(16));
+            var iterations = options.iterations || (random.get(4000) + config.pbkdf2.minIterations);
+          
+
+            var deriveBlockLoop = function(key, U_1, U_n, counter, iterations, onError, onSuccess) {
+            
+                if (counter == iterations) {
+                    onSuccess(U_1);
+                    return;
+                }
+
+                _pbkdf2.signHMAC(key, U_n, onError, function(result) {
+                    var new_U_n = new Uint8Array(result);
+                    for (var i=0; i < U_1.length; i++){
+                        U_1[i] ^= new_U_n[i];
+                    }
+                    
+                    deriveBlockLoop(key, U_1, new_U_n, counter + 1, iterations, onError, onSuccess);
+                });  
+            }
+            
+            var deriveLoop = function(key, blockNum, length, salt, iterations, output, onError, onSuccess) {
+                var data = combineBuffers(salt.buffer, new Uint8Array([0,0,0,blockNum]).buffer);
+                _pbkdf2.signHMAC(key, data, onError, function(hmacBuffer) {
+                    var hmac = new Uint8Array(hmacBuffer);
+                    deriveBlockLoop(key, hmac, hmac, 1, iterations, onError, function(U_1) {
+                        var newOutput = new Uint8Array(combineBuffers(output.buffer, U_1.buffer));
+                        if (newOutput.length == length) {
+                            onSuccess(newOutput);
+                        }
+                        else if (newOutput.length > length) {
+                            onSuccess(newOutput.slice(0, length));
+                        }
+                        else {
+                            deriveLoop(key, blockNum + 1, length, salt, iterations, newOutput, onError, onSuccess);
+                        }
+                    });
+                });                
+            }
+          
+            _pbkdf2.importKeyHMAC(password, onError, function(key) {
+                deriveLoop(key, 1, bitLength / 8, salt, iterations, new Uint8Array(), onError, function(derived) {
+                    onSuccess({salt: salt, iterations: iterations, array: array})
+                });
+            });
+        }
+        
+        
+         
     }
 
     
@@ -733,6 +886,35 @@
             }
             
         },
+        
+        /** 
+         * Password-Based Key Derivation Function 2
+         * @class pbkdf2
+         */
+        pbkdf2 : {
+            
+            /** Derive a byte array from a password 
+             * 
+             * @method derive
+             * @param {String} password
+             * @param {int} bitLength - request lenght, in bits
+             * @param {Object} options - number of iterations and salt, if required. Autogenerated otherwise
+             * @param {function} onError - called with error details if derive fails
+             * @param {function} onSuccess - called with {salt: ArrayBuffer, interations: int, array: derived data}
+             */
+            derive: function(password, bitLength, options, onError, onSuccess) {
+                
+                if (oldIE || oldWebkit) {
+                    _pbkdf2.compatDerive(password, bitLength, options, onError.bind(null, "Compat: could not derive bits"), onSuccess);    
+                }
+                else {
+                    _pbkdf2.passwordToKey(password, onError.bind(null, "Could not generate password"), function(key) {
+                        _pbkdf2.deriveBits(key, bitLength, options, onError.bind(null, "Could not derive bits"), onSuccess);
+                    });
+                }
+            }
+            
+        },
         /**
          * Encoding/Decoding for encrypted data transport
          * @class Packaging
@@ -895,5 +1077,7 @@
             });
         }
     }
+    simpleCrypto.test = _pbkdf2;
+    simpleCrypto.s2b = stringToBytes;
     return simpleCrypto;
 }));
