@@ -52,16 +52,16 @@ Please see [Unit Tests](https://github.com/encryb/simplecrypto/tree/master/test)
 
 ## FAQ
 
-Q: Why another Javascript Crypto library?
+Q: Why another Javascript Crypto library?  
 A: Simplecrypto is built on top of WebCrypto and IndexedDB. Performance advantage over other libraries is 
 [significant](https://medium.com/@encryb/comparing-performance-of-javascript-cryptography-libraries-42fb138116f3). 
 IndexedDB provides for safer storage of Javascript keys.
 
-Q: Why AES-CBC-HMAC instead of AES-GCM?
+Q: Why AES-CBC-HMAC instead of AES-GCM?  
 A: WebKit does not support AES-GCM.
 
-Q: Why is there no support for PBKDF2?
-WebKit does not support PBKDF2. Support for other browsers is coming soon.
+Q: PBKDF2?  
+WebKit and IE do not support PBKDF2, but support HMAC-SHA1. Small shim is used to implement PBKDF2 in WebKit and IE. Elsewhere native PBKDF2 support is used. 
 
 ## License
 Apache 2.0
