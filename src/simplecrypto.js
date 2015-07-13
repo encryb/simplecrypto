@@ -56,7 +56,7 @@
 
     function wrap(result, onError, onSuccess) {
         if (typeof result.then === "function") {
-            result.catch(onError).then(onSuccess);
+            result.then(onSuccess).catch(onError);
         }
         else {
             result.onerror = onError;
@@ -519,7 +519,7 @@
                             onSuccess(newOutput);
                         }
                         else if (newOutput.length > length) {
-                            onSuccess(newOutput.slice(0, length));
+                            onSuccess(newOutput.subarray(0, length));
                         }
                         else {
                             deriveLoop(key, blockNum + 1, length, salt, iterations, newOutput, onError, onSuccess);
@@ -530,7 +530,7 @@
           
             _pbkdf2.importKeyHMAC(password, onError, function(key) {
                 deriveLoop(key, 1, bitLength / 8, salt, iterations, new Uint8Array(), onError, function(derived) {
-                    onSuccess({salt: salt, iterations: iterations, array: array})
+                    onSuccess({salt: salt, iterations: iterations, array: derived})
                 });
             });
         }
@@ -904,16 +904,22 @@
              */
             derive: function(password, bitLength, options, onError, onSuccess) {
                 
-                if (oldIE || oldWebkit) {
-                    _pbkdf2.compatDerive(password, bitLength, options, onError.bind(null, "Compat: could not derive bits"), onSuccess);    
-                }
-                else {
-                    _pbkdf2.passwordToKey(password, onError.bind(null, "Could not generate password"), function(key) {
-                        _pbkdf2.deriveBits(key, bitLength, options, onError.bind(null, "Could not derive bits"), onSuccess);
-                    });
+                try {
+                    _pbkdf2.passwordToKey(password, 
+                        // lot of browsers/platforms don't support PBKDF2. Try compat method.
+                        function(error) {
+                            _pbkdf2.compatDerive(password, bitLength, options, onError.bind(null, "Compat: could not derive bits"), onSuccess);
+                        },
+                        // PBKDF2 works, derive bits.
+                        function(key) {
+                            _pbkdf2.deriveBits(key, bitLength, options, onError.bind(null, "Could not derive bits"), onSuccess);
+                        }
+                    );
+                } catch (e) {
+                    // IE will not return onError, but instead throw an exception
+                    _pbkdf2.compatDerive(password, bitLength, options, onError.bind(null, "Compat: could not derive bits"), onSuccess);
                 }
             }
-            
         },
         /**
          * Encoding/Decoding for encrypted data transport
