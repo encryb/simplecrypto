@@ -26,9 +26,9 @@
         aesIvLength: 16,
         hmacOptions: {
             name: "HMAC",
-            hash: { name: "SHA-256" },
+            hash: { name: "SHA-1" },
             // old webkit stores length in bytes, everything else in bits
-            length: oldWebkit ? 32 : 256
+            length: oldWebkit ? 20 : 160
         },
         
         rsaLength: 2048,
@@ -47,14 +47,7 @@
         }
     };
 
-    function combineBuffers(buffer1, buffer2) {
-        var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
-        tmp.set(new Uint8Array(buffer1), 0);
-        tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
-        return tmp.buffer;
-    }
-
-    function wrap(result, onError, onSuccess) {
+   function wrap(result, onError, onSuccess) {
         if (typeof result.then === "function") {
             result.then(onSuccess).catch(onError);
         }
@@ -65,17 +58,45 @@
             };
         }
     }
-    
-    function bytesToString(bytes) {
-        return String.fromCharCode.apply(null, new Uint8Array(bytes));
-    }
 
-    function stringToBytes(str) {
-        var chars = [];
-        for (var i = 0; i < str.length; ++i) {
-            chars.push(str.charCodeAt(i));
+    var util = {
+
+        uint32toBuffer: function(value) {
+            var result = new Uint8Array(4);        
+            result[0] = (value & 0x000000ff);
+            result[1] = (value & 0x0000ff00) >> 8;
+            result[2] = (value & 0x00ff0000) >> 16;
+            result[3] = (value & 0xff000000) >> 24;
+            return result.buffer;
+        },
+        
+        bufferToUint32: function(array) {
+            if (array instanceof ArrayBuffer) {
+                array = new Uint8Array(array);
+            }
+            return array[0] + (array[1] << 8) + (array[2] << 16) + (array[3] << 24);
+        },
+    
+        combineBuffers: function(buffer1, buffer2) {
+            var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
+            tmp.set(new Uint8Array(buffer1), 0);
+            tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
+            return tmp.buffer;
+        },
+    
+ 
+        
+        bytesToString: function(bytes) {
+            return String.fromCharCode.apply(null, new Uint8Array(bytes));
+        },
+
+        stringToBytes: function(str) {
+            var chars = [];
+            for (var i = 0; i < str.length; ++i) {
+                chars.push(str.charCodeAt(i));
+            }
+            return new Uint8Array(chars);
         }
-        return new Uint8Array(chars);
     }
 
     var random = {
@@ -161,7 +182,7 @@
                 ),
                 onError,
                 function (encrypted) {
-                    var cipherdata = combineBuffers(iv, encrypted);
+                    var cipherdata = util.combineBuffers(iv, encrypted);
                     onSuccess(cipherdata);
                 }
             );
@@ -255,7 +276,7 @@
         importEncryptPrivateKey: function(jwk, onError, onSuccess) {
             
             if(oldWebkit || oldIE) {
-                jwk = stringToBytes(JSON.stringify(jwk));
+                jwk = util.stringToBytes(JSON.stringify(jwk));
             }
             
             wrap(window.crypto.subtle.importKey(
@@ -272,7 +293,7 @@
         },
         importSignPrivateKey: function (jwk, onError, onSuccess) {
             if(oldWebkit || oldIE) {
-                jwk = stringToBytes(JSON.stringify(jwk));
+                jwk = util.stringToBytes(JSON.stringify(jwk));
             }
             wrap(window.crypto.subtle.importKey(
                     "jwk",
@@ -295,7 +316,7 @@
                     if (oldWebkit || oldIE) {
                         try {
                             // TODO: need to add key type to JWK
-                            var fixedJwk = JSON.parse(bytesToString(jwk));
+                            var fixedJwk = JSON.parse(util.bytesToString(jwk));
                             onSuccess(fixedJwk);
                         }
                         catch(e) {
@@ -367,7 +388,7 @@
         
         aesEncrypt: function(data, onError, onSuccess) {                        
             simpleCrypto.sym.genKeysAndEncrypt(data, onError, function (aesDict) {
-                var combinedKeys = combineBuffers(aesDict.keys.aesKey, aesDict.keys.hmacKey);
+                var combinedKeys = util.combineBuffers(aesDict.keys.aesKey, aesDict.keys.hmacKey);
                 onSuccess(combinedKeys, aesDict.data);
             });
         },
@@ -406,7 +427,7 @@
          passwordToKey: function(password, onError, onSuccess) {
             wrap(window.crypto.subtle.importKey(
                     "raw",
-                    stringToBytes(password),
+                    util.stringToBytes(password),
                     {"name": "PBKDF2"},
                     false,
                     ["deriveBits"]
@@ -417,7 +438,18 @@
         },
         deriveBits: function(key, length, options, onError, onSuccess) {
             var salt = options.salt || window.crypto.getRandomValues(new Uint8Array(16));
-            var iterations = options.iterations || (random.get(4000) + config.pbkdf2.minIterations);
+            var iterations;
+            if (options.iterations) {
+                if (options.iterations instanceof ArrayBuffer || options.iterations instanceof Uint8Array) {
+                    iterations = util.bufferToUint32(options.iterations);
+                }
+                else {
+                    iterations = options.iterations;
+                }
+            }
+            else {
+                iterations = (random.get(4000) + config.pbkdf2.minIterations);
+            }
             wrap(window.crypto.subtle.deriveBits(
                     {
                         name: "PBKDF2",
@@ -429,15 +461,15 @@
                     length
                 ),
                 onError,
-                function(array) {
-                    onSuccess({salt: salt, iterations: iterations, array: array})
+                function(derived) {
+                    onSuccess({salt: salt.buffer, iterations: util.uint32toBuffer(iterations), derived: derived})
                 }
             )
         },
         importKeyHMAC: function(password, onError, onSuccess) {
             wrap(window.crypto.subtle.importKey(
                     "raw",
-                    stringToBytes(password),
+                    util.stringToBytes(password),
                     {
                         name: "HMAC",
                         hash: { name: config.pbkdf2.hash },
@@ -489,7 +521,18 @@
         compatDerive: function(password, bitLength, options, onError, onSuccess) {
             
             var salt = options.salt || window.crypto.getRandomValues(new Uint8Array(16));
-            var iterations = options.iterations || (random.get(4000) + config.pbkdf2.minIterations);
+            var iterations;
+            if (options.iterations) {
+                if (options.iterations instanceof ArrayBuffer || options.iterations instanceof Uint8Array) {
+                    iterations = util.bufferToUint32(options.iterations);
+                }
+                else {
+                    iterations = options.iterations;
+                }
+            }
+            else {
+                iterations = (random.get(4000) + config.pbkdf2.minIterations);
+            }
           
 
             var deriveBlockLoop = function(key, U_1, U_n, counter, iterations, onError, onSuccess) {
@@ -510,16 +553,16 @@
             }
             
             var deriveLoop = function(key, blockNum, length, salt, iterations, output, onError, onSuccess) {
-                var data = combineBuffers(salt.buffer, new Uint8Array([0,0,0,blockNum]).buffer);
+                var data = util.combineBuffers(salt.buffer, new Uint8Array([0,0,0,blockNum]).buffer);
                 _pbkdf2.signHMAC(key, data, onError, function(hmacBuffer) {
                     var hmac = new Uint8Array(hmacBuffer);
                     deriveBlockLoop(key, hmac, hmac, 1, iterations, onError, function(U_1) {
-                        var newOutput = new Uint8Array(combineBuffers(output.buffer, U_1.buffer));
+                        var newOutput = new Uint8Array(util.combineBuffers(output.buffer, U_1.buffer));
                         if (newOutput.length == length) {
-                            onSuccess(newOutput);
+                            onSuccess(newOutput.buffer);
                         }
                         else if (newOutput.length > length) {
-                            onSuccess(newOutput.subarray(0, length));
+                            onSuccess(newOutput.subarray(0, length).buffer);
                         }
                         else {
                             deriveLoop(key, blockNum + 1, length, salt, iterations, newOutput, onError, onSuccess);
@@ -530,7 +573,7 @@
           
             _pbkdf2.importKeyHMAC(password, onError, function(key) {
                 deriveLoop(key, 1, bitLength / 8, salt, iterations, new Uint8Array(), onError, function(derived) {
-                    onSuccess({salt: salt, iterations: iterations, array: derived})
+                    onSuccess({salt: salt.buffer, iterations: util.uint32toBuffer(iterations), derived: derived})
                 });
             });
         }
@@ -866,6 +909,36 @@
                     });
                 });
             },
+            
+            encryptWithPassword: function(password, data, onError, onSuccess) {
+                simpleCrypto.pbkdf2.derive(password, 288, {}, onError.bind(null, "PBKDF2 error"), function(pbkdf2) {
+                    var keys = new Uint8Array(pbkdf2.derived);
+                    var aesKeyLenght = config.aesLength / 8;                        
+                    var aesKey = keys.subarray(0, aesKeyLenght);
+                    var hmacKey = keys.subarray(aesKeyLenght);
+                    console.log(aesKey, hmacKey);
+                    simpleCrypto.sym.encrypt({aesKey: aesKey, hmacKey: hmacKey}, data, onError, function(encrypted){
+                       encrypted.pbkdf2_salt = pbkdf2.salt;
+                       encrypted.pbkdf2_iter = pbkdf2.iterations;
+                       onSuccess(encrypted); 
+                    });
+                });    
+            },
+            
+            decryptWithPassword: function(password, encrypted, onError, onSuccess) {
+                simpleCrypto.pbkdf2.derive(password, 288, {salt: encrypted.pbkdf2_salt, iterations: encrypted.pbkdf2_iter}, 
+                    onError.bind(null, "PBKDF2 error"), function(pbkdf2) {
+                        var keys = new Uint8Array(pbkdf2.derived);
+                        var aesKeyLenght = config.aesLength / 8;                        
+                        var aesKey = keys.subarray(0, aesKeyLenght);
+                        var hmacKey = keys.subarray(aesKeyLenght);
+                        simpleCrypto.sym.decrypt({aesKey: aesKey, hmacKey: hmacKey}, encrypted, onError, function(decrypted) {
+                            onSuccess(decrypted);
+                            
+                        });
+                    }
+                );
+            },
 
             /** Decrypt
              *  
@@ -934,12 +1007,14 @@
                         aesEncrypted : 0, hmac: 1,
                         // asymmetric
                         rsaEncrypted: 10,
-                        signatureOfData: 20, signatureOfEncrypted: 21
+                        signatureOfData: 20, signatureOfEncrypted: 21,
+                        pbkdf2_iter: 30, pbkdf2_salt: 31
             },
             INDEX_TO_LABEL: {
                         0: "aesEncrypted", 1: "hmac",
                         10: "rsaEncrypted",
-                        20: "signatureOfData", 21: "signatureOfEncrypted"
+                        20: "signatureOfData", 21: "signatureOfEncrypted",
+                        30: "pbkdf2_iter", 31: "pbkdf2_salt"
             },
         
          
@@ -1084,6 +1159,6 @@
         }
     }
     simpleCrypto.test = _pbkdf2;
-    simpleCrypto.s2b = stringToBytes;
+    simpleCrypto.s2b = util.stringToBytes;
     return simpleCrypto;
 }));

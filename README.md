@@ -61,7 +61,8 @@ Q: Why AES-CBC-HMAC instead of AES-GCM?
 A: WebKit does not support AES-GCM.
 
 Q: PBKDF2?  
-WebKit and IE do not support PBKDF2, but support HMAC-SHA1. Small shim is used to implement PBKDF2 in WebKit and IE. Elsewhere native PBKDF2 support is used. 
+A: Safari, IE and Chrome on Linux do not support PBKDF2, but support HMAC-SHA1.  
+Small shim is used to implement PBKDF2 in thise cases. Elsewhere, native PBKDF2 support is used. 
 
 ## License
 Apache 2.0

@@ -37,7 +37,7 @@ describe('symmetricWithKeys', function() {
     var result;
 
     var aesKey = new Uint8Array(16);
-    var hmacKey = new Uint8Array(32);
+    var hmacKey = new Uint8Array(20);
 
 
     beforeEach(function (done) {
@@ -53,5 +53,39 @@ describe('symmetricWithKeys', function() {
         expect(result).not.toBeUndefined();
         expect(new Uint8Array(result)).toEqual(testArray);
         expect(new Uint8Array(result)).not.toEqual(wrongArray);
+    });
+});
+
+describe('symmetricWithPassword', function() {
+    var testArray = new Uint8Array(Array.apply(null, new Array(100)).map(function(){return 5}));
+    var password = "simplecrypt0";
+    var gEncrypted, gPacked, gUnpacked;
+    
+    it('encrypt', function(done) {
+        simpleCrypto.sym.encryptWithPassword(password, testArray, logError.bind(null, done), function(encrypted){
+            expect(encrypted.aesEncrypted).not.toBeUndefined();
+            gEncrypted = encrypted;
+            done();
+        });
+    });
+    it('pack', function() {
+        try {
+            gPacked = simpleCrypto.pack.encode(gEncrypted); 
+        }
+        catch (e) {
+            console.log("Error", JSON.stringify(gEncrypted), e);
+        }
+        expect(gPacked).not.toBeUndefined();
+    });
+    it('unpack', function() {
+        gUnpacked = simpleCrypto.pack.decode(gPacked);
+    });
+    
+    it('decrypt', function(done) {
+        simpleCrypto.sym.decryptWithPassword(password, gEncrypted, logError.bind(null, done), function(decrypted){
+            expect(decrypted).not.toBeUndefined();
+            expect(new Uint8Array(decrypted)).toEqual(testArray);
+            done();
+        });
     });
 });

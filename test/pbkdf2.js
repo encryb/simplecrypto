@@ -13,7 +13,7 @@ describe('pbkdf2', function() {
 				console.error(arguments);
 			}, 
 			function(result) {
-		        expect(new Uint8Array(result.array)).toEqual(correct);
+		        expect(new Uint8Array(result.derived)).toEqual(correct);
 				done();
 			}
 		);
@@ -33,7 +33,7 @@ describe('pbkdf2', function() {
 				console.error(arguments);
 			}, 
 			function(result) {
-		        expect(new Uint8Array(result.array)).toEqual(correct);
+		        expect(new Uint8Array(result.derived)).toEqual(correct);
 				done();
 			}
 		);
@@ -53,7 +53,7 @@ describe('pbkdf2', function() {
 				console.error(arguments);
 			}, 
 			function(result) {
-		        expect(new Uint8Array(result.array)).toEqual(correct);
+		        expect(new Uint8Array(result.derived)).toEqual(correct);
 				done();
 			}
 		);
