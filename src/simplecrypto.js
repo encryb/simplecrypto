@@ -77,11 +77,14 @@
             return array[0] + (array[1] << 8) + (array[2] << 16) + (array[3] << 24);
         },
     
-        combineBuffers: function(buffer1, buffer2) {
-            var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
-            tmp.set(new Uint8Array(buffer1), 0);
-            tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
-            return tmp.buffer;
+        combineArrays: function(in1, in2) {
+            var array1 = (in1 instanceof ArrayBuffer || in1 instanceof Array) ? new Uint8Array(in1) : in1;
+            var array2 = (in2 instanceof ArrayBuffer || in2 instanceof Array) ? new Uint8Array(in2) : in2;
+          
+            var tmp = new Uint8Array(array1.length + array2.length);
+            tmp.set(array1, 0);
+            tmp.set(array2, array1.length);
+            return tmp;
         },
     
  
@@ -182,8 +185,8 @@
                 ),
                 onError,
                 function (encrypted) {
-                    var cipherdata = util.combineBuffers(iv, encrypted);
-                    onSuccess(cipherdata);
+                    var cipherdata = util.combineArrays(iv, encrypted);
+                    onSuccess(cipherdata.buffer);
                 }
             );
         },
@@ -388,8 +391,8 @@
         
         aesEncrypt: function(data, onError, onSuccess) {                        
             simpleCrypto.sym.genKeysAndEncrypt(data, onError, function (aesDict) {
-                var combinedKeys = util.combineBuffers(aesDict.keys.aesKey, aesDict.keys.hmacKey);
-                onSuccess(combinedKeys, aesDict.data);
+                var combinedKeys = util.combineArrays(aesDict.keys.aesKey, aesDict.keys.hmacKey);
+                onSuccess(combinedKeys.buffer, aesDict.data);
             });
         },
         
@@ -553,16 +556,17 @@
             }
             
             var deriveLoop = function(key, blockNum, length, salt, iterations, output, onError, onSuccess) {
-                var data = util.combineBuffers(salt.buffer, new Uint8Array([0,0,0,blockNum]).buffer);
+
+                var data = util.combineArrays(salt, new Uint8Array([0,0,0,blockNum]));
                 _pbkdf2.signHMAC(key, data, onError, function(hmacBuffer) {
                     var hmac = new Uint8Array(hmacBuffer);
                     deriveBlockLoop(key, hmac, hmac, 1, iterations, onError, function(U_1) {
-                        var newOutput = new Uint8Array(util.combineBuffers(output.buffer, U_1.buffer));
+                        var newOutput = new Uint8Array(util.combineArrays(output, U_1));
                         if (newOutput.length == length) {
                             onSuccess(newOutput.buffer);
                         }
                         else if (newOutput.length > length) {
-                            onSuccess(newOutput.subarray(0, length).buffer);
+                            onSuccess(new Uint8Array(newOutput.subarray(0, length)).buffer);
                         }
                         else {
                             deriveLoop(key, blockNum + 1, length, salt, iterations, newOutput, onError, onSuccess);
@@ -916,7 +920,6 @@
                     var aesKeyLenght = config.aesLength / 8;                        
                     var aesKey = keys.subarray(0, aesKeyLenght);
                     var hmacKey = keys.subarray(aesKeyLenght);
-                    console.log(aesKey, hmacKey);
                     simpleCrypto.sym.encrypt({aesKey: aesKey, hmacKey: hmacKey}, data, onError, function(encrypted){
                        encrypted.pbkdf2_salt = pbkdf2.salt;
                        encrypted.pbkdf2_iter = pbkdf2.iterations;

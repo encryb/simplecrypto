@@ -56,6 +56,7 @@ describe('symmetricWithKeys', function() {
     });
 });
 
+
 describe('symmetricWithPassword', function() {
     var testArray = new Uint8Array(Array.apply(null, new Array(100)).map(function(){return 5}));
     var password = "simplecrypt0";
@@ -83,6 +84,14 @@ describe('symmetricWithPassword', function() {
     
     it('decrypt', function(done) {
         simpleCrypto.sym.decryptWithPassword(password, gEncrypted, logError.bind(null, done), function(decrypted){
+            expect(decrypted).not.toBeUndefined();
+            expect(new Uint8Array(decrypted)).toEqual(testArray);
+            done();
+        });
+    });
+    
+    it('decryptUnpacked', function(done) {
+        simpleCrypto.sym.decryptWithPassword(password, gUnpacked, logError.bind(null, done), function(decrypted){
             expect(decrypted).not.toBeUndefined();
             expect(new Uint8Array(decrypted)).toEqual(testArray);
             done();

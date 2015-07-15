@@ -1,5 +1,5 @@
 describe('pbkdf2', function() {
-	
+
 	it('rfc6070test1', function(done) {
 		var password = "password";
 		var salt = new Uint8Array([115, 97, 108, 116]);
@@ -39,7 +39,6 @@ describe('pbkdf2', function() {
 		);
 	});
 	
-	
 	it('rfc6070test4', function(done) {
 		var password = "passwordPASSWORDpassword";
 		// saltSALTsaltSALTsaltSALTsaltSALTsalt
@@ -60,4 +59,3 @@ describe('pbkdf2', function() {
 	});
 	
 });
-	
