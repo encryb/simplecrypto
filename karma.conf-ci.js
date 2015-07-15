@@ -15,11 +15,6 @@ module.exports = function(config) {
 
   // Browsers to run on Sauce Labs
   var customLaunchers = {
-    'SL_Chrome_Win': {
-      base: 'SauceLabs',
-      browserName: 'chrome',
-      platform: 'Windows 7'
-    },
     'SL_Firefox_linux': {
       base: 'SauceLabs',
       browserName: 'firefox',
@@ -30,11 +25,10 @@ module.exports = function(config) {
       browserName: 'chrome',
       platform: 'Linux'
     },
-    'SL_IE': {
+    'SL_Chrome_Android': {
       base: 'SauceLabs',
-      browserName: 'internet explorer',
-      version: '11',
-      platform: 'Windows 8.1'
+      browserName: 'chrome',
+      platform: 'Android'
     }
   };
 
@@ -74,7 +68,7 @@ module.exports = function(config) {
     sauceLabs: {
       testName: 'SimpleCrypto'
     },
-    browserNoActivityTimeout: 30000,
+    browserNoActivityTimeout: 60000,
     captureTimeout: 220000,
     customLaunchers: customLaunchers,
 
