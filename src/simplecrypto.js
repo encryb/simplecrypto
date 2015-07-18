@@ -276,50 +276,69 @@
             );
         },
         
-        importEncryptPrivateKey: function(jwk, onError, onSuccess) {
-            
+        
+        _importKey: function(jwk, options, usage, onError, onSuccess) {
             if(oldWebkit || oldIE) {
-                jwk = util.stringToBytes(JSON.stringify(jwk));
-            }
-            
-            wrap(window.crypto.subtle.importKey(
-                    "jwk",
-                    jwk,
-                    { name: config.rsaEncryptCipher, hash: {name: config.rsaEncryptHash } },
-                    false,
-                    ["decrypt"] 
-                ), onError,
-                function (privateKey) {
-                    onSuccess(privateKey);
+                // make a copy, since might need this JWK for other things.
+                jwk = JSON.parse(JSON.stringify(jwk));
+                if (jwk.hasOwnProperty("ext")) {
+                    jwk.extractable = jwk.ext;
+                    delete jwk.ext;
                 }
-            );  
-        },
-        importSignPrivateKey: function (jwk, onError, onSuccess) {
-            if(oldWebkit || oldIE) {
+                if (jwk.hasOwnProperty("key_ops")) {
+                    delete jwk.key_ops;
+                }
                 jwk = util.stringToBytes(JSON.stringify(jwk));
             }
+            
             wrap(window.crypto.subtle.importKey(
                     "jwk",
                     jwk,
-                    { name: config.rsaSignCipher, hash: { name: config.rsaSignHash } },
+                    options,
                     false,
-                    ["sign"]
+                    usage 
                 ), onError,
                 function (privateKey) {
                     onSuccess(privateKey);
                 }
             );
-        }, 
-        exportKey: function(key, onError, onSuccess) {
+        },
+        
+        importEncryptKey: function(jwk, usage, onError, onSuccess) {
+            var options = { name: config.rsaEncryptCipher, hash: {name: config.rsaEncryptHash } };
+            this._importKey(jwk, options, usage, onError, onSuccess);
+                     
+        },
+        
+        importSignKey: function(jwk, usage, onError, onSuccess) {
+            var options = { name: config.rsaSignCipher, hash: { name: config.rsaSignHash } };
+            this._importKey(jwk, options, usage, onError, onSuccess);
+                     
+        },
+        
+        
+        exportKey: function(key, usage, onError, onSuccess) {
             wrap(window.crypto.subtle.exportKey(
                     "jwk",
                     key
                 ), onError,
                 function (jwk) {
+
                     if (oldWebkit || oldIE) {
                         try {
-                            // TODO: need to add key type to JWK
                             var fixedJwk = JSON.parse(util.bytesToString(jwk));
+  
+                            if (fixedJwk.hasOwnProperty("extractable")) {
+                                fixedJwk.ext = fixedJwk.extractable;
+                                delete fixedJwk.extractable;
+                            }
+                            if (!fixedJwk.hasOwnProperty("key_ops")) {
+                                fixedJwk.key_ops = usage;
+                            }
+                            if (!fixedJwk.hasOwnProperty("alg")) {
+                                fixedJwk.alg = key.algorithm.name.toUpperCase();
+                            }
+
                             onSuccess(fixedJwk);
                         }
                         catch(e) {
@@ -665,9 +684,9 @@
             generateEncryptKey: function (onError, onSuccess) {
 
                 _asym.generateEncryptKeys(onError.bind(null, "Could not generate encrypt key"), function(keys) {
-                 _asym.exportKey(keys.publicKey, onError.bind(null, "Could not export public encrypt key"), function(publicJwk) {
-                  _asym.exportKey(keys.privateKey, onError.bind(null, "Could not export private encrypt key"), function(privateJwk){
-                   _asym.importEncryptPrivateKey(privateJwk, onError.bind(null, "Could not import private encrypt key"), function(privateKey) {
+                 _asym.exportKey(keys.publicKey, ["encrypt"], onError.bind(null, "Could not export public encrypt key"), function(publicJwk) {
+                  _asym.exportKey(keys.privateKey, ["decrypt"], onError.bind(null, "Could not export private encrypt key"), function(privateJwk){
+                   _asym.importEncryptKey(privateJwk, ["decrypt"], onError.bind(null, "Could not import private encrypt key"), function(privateKey) {
 
                      onSuccess({privateKey: privateKey, publicKey: keys.publicKey, 
                                 privateJwk: privateJwk, publicJwk: publicJwk});
@@ -689,9 +708,9 @@
             generateSignKey: function (onError, onSuccess) {
 
                 _asym.generateSignKeys(onError.bind(null, "Could not generate sign key"), function(keys) {
-                 _asym.exportKey(keys.publicKey, onError.bind(null, "Could not export public sign key"), function(publicJwk) {
-                  _asym.exportKey(keys.privateKey, onError.bind(null, "Could not export private sign key"), function(privateJwk){
-                   _asym.importSignPrivateKey(privateJwk, onError.bind(null, "Could not import private sign key"), function(privateKey) {
+                 _asym.exportKey(keys.publicKey, ["verify"], onError.bind(null, "Could not export public sign key"), function(publicJwk) {
+                  _asym.exportKey(keys.privateKey, ["sign"], onError.bind(null, "Could not export private sign key"), function(privateJwk){
+                   _asym.importSignKey(privateJwk, ["sign"], onError.bind(null, "Could not import private sign key"), function(privateKey) {
 
                      onSuccess({privateKey: privateKey, publicKey: keys.publicKey, 
                                 privateJwk: privateJwk, publicJwk: publicJwk});
@@ -1161,7 +1180,6 @@
             });
         }
     }
-    simpleCrypto.test = _pbkdf2;
-    simpleCrypto.s2b = util.stringToBytes;
+    
     return simpleCrypto;
 }));
