@@ -141,7 +141,7 @@
             );
         },
 
-        importKeyAES: function (key, onError, onSuccess) {     
+        importKeyAES: function (key, onError, onSuccess) {   
             wrap(window.crypto.subtle.importKey(
                     "raw",
                     key,
@@ -675,6 +675,53 @@
             },
             
             /**
+             * Import RSA encryption keys. 
+             * 
+             * @method asym.importEncryptKey
+             * @param {Object} publicJwk - public (decrypt) JSON key
+             * @param {Object} privateJwk - private (encrypt) JSON key
+             * @param {function} onError - called with error details if import fails
+             * @param {function} onSuccess - called with {privateKey: CryptoKey, publicKey: CryptoKey, privateJwk: JWK, publicJwk: JWK} 
+             */
+            importEncryptKey: function (publicJwk, privateJwk, onError, onSuccess) {
+                _asym.importEncryptKey(privateJwk, ["decrypt"], onError.bind(null, "decrypt key"), function(privateKey) {
+                    _asym.importEncryptKey(publicJwk, ["encrypt"], onError.bind(null, "encrypt key"), function(publicKey) {
+                        onSuccess({privateKey: privateKey, publicKey: publicKey, 
+                                privateJwk: privateJwk, publicJwk: publicJwk});
+                   });    
+                });
+            },
+            
+            /**
+             * Import RSA private encryption keys. 
+             * 
+             * @method asym.importEncryptPrivateKey
+             * @param {Object} publicJwk - public (decrypt) JSON key
+             * @param {Object} privateJwk - private (encrypt) JSON key
+             * @param {function} onError - called with error details if import fails
+             * @param {function} onSuccess - called with privateKey CryptoKey
+             */
+            importEncryptPrivateKey: function (privateJwk, onError, onSuccess) {
+                _asym.importEncryptKey(privateJwk, ["decrypt"], onError.bind(null, "decrypt key"), function(privateKey) {
+                    onSuccess(privateKey);
+               });    
+            },
+            
+            /**
+             * Import RSA public encryption keys. 
+             * 
+             * @method asym.importEncryptPublicKey
+             * @param {Object} publicJwk - public (decrypt) JSON key
+             * @param {function} onError - called with error details if import fails
+             * @param {function} onSuccess - called with publicKey CryptoKey
+             */
+            importEncryptPublicKey: function(publicJwk, onError, onSuccess) {
+                _asym.importEncryptKey(publicJwk, ["encrypt"], onError.bind(null, "encrypt key"), function(publicKey) {
+                    onSuccess(publicKey);
+                });    
+            },
+
+            /**
              * Generate RSA encryption keys. Private CryptoKey is not exportable, and can be stored safely.
              * 
              * @method asym.generateEncryptKey
@@ -696,7 +743,6 @@
                  });
                 });
             },
-
 
             /**
              * Generate RSA signature keys. Private CryptoKey is not exportable, and can be stored safely.
@@ -854,12 +900,15 @@
 
                 // generate random AES and HMAC keys
                 // export them in RAW format
+                // import them back as non-extractable keys, so that we can store in the database
                 _sym.generateKeyAES(onError.bind(null, "Could not generate AES key"), function(aesKeyObj){
                  _sym.generateKeyHMAC(onError.bind(null, "Could not generate HMAC key"), function(hmacKeyObj){
                   _sym.exportKey(aesKeyObj, onError.bind(null, "Could not export AES key"), function(aesKey) {
                    _sym.exportKey(hmacKeyObj, onError.bind(null, "Could not export HMAC key"), function(hmacKey) {
-                       onSuccess({aesKeyObj: aesKeyObj, hmacKeyObj: hmacKeyObj, aesKey: aesKey, hmacKey: hmacKey});    
-                   }); }); }); });
+                    _sym.importKeyAES(aesKey, onError.bind(null, "Could not import AES key"), function(aesKeyObjNotExtract) {
+                     _sym.importKeyHMAC(hmacKey, onError.bind(null, "Could not import HMAC key"), function(hmacKeyObjNotExtract) {
+                       onSuccess({aesKeyObj: aesKeyObjNotExtract, hmacKeyObj: hmacKeyObjNotExtract, aesKey: aesKey, hmacKey: hmacKey});    
+                     }); }); }); }); }); });
             },
             
             /** Convert raw AES and HMAC keys into WebCrypto CryptoKey objects
@@ -886,7 +935,7 @@
                     keys["aesKeyObj"] = aesKeyObj;
                     _sym.importKeyHMAC(keys.hmacKey, onError.bind(null, "Could not import HMAC key"), function(hmacKeyObj) {
                         keys["hmacKeyObj"] = hmacKeyObj;
-                        onSuccess();
+                        onSuccess(keys);
                     });
                 });
             },
@@ -906,7 +955,7 @@
                 });
             },
             
-            /** Generate random AES and HMAC keys and encrypt data. This utility function combines generateKeys and encrypt
+            /** Encrypt data using keys
              *
              * @method sym.encrypt
              * @param {Object} keys - AES and HMAC keys. Also optional IV (otherwise random is generated)
@@ -924,6 +973,7 @@
                     else {
                         iv = window.crypto.getRandomValues(new Uint8Array(config.aesIvLength));
                     }
+
                     _sym.encrypt(keys.aesKeyObj, iv, data, onError.bind(null, "Could not AES Encrypt"), function(aesEncrypted){
                         _sym.signHMAC(keys.hmacKeyObj, aesEncrypted, onError.bind(null, "Could not HMAC sign"), function(hmac) {
                             var encrypted = { aesEncrypted: aesEncrypted, hmac: hmac };
@@ -933,6 +983,15 @@
                 });
             },
             
+            
+            /** Generate keys from password and encrypt
+             *
+             * @method sym.encryptWithPassword
+             * @param {string} password - Password used to generate AES and HMAC keys
+             * @param {Uint8Array | ArrayBuffer} data - Data to encrypt
+             * @param {function} onError - called with error details if key generation or encryption fail
+             * @param {function} onSuccess - called with {aesEncrypted: ArrayBuffer, hmac: {ArrayBuffer}
+             */
             encryptWithPassword: function(password, data, onError, onSuccess) {
                 simpleCrypto.pbkdf2.derive(password, 288, {}, onError.bind(null, "PBKDF2 error"), function(pbkdf2) {
                     var keys = new Uint8Array(pbkdf2.derived);
@@ -947,20 +1006,6 @@
                 });    
             },
             
-            decryptWithPassword: function(password, encrypted, onError, onSuccess) {
-                simpleCrypto.pbkdf2.derive(password, 288, {salt: encrypted.pbkdf2_salt, iterations: encrypted.pbkdf2_iter}, 
-                    onError.bind(null, "PBKDF2 error"), function(pbkdf2) {
-                        var keys = new Uint8Array(pbkdf2.derived);
-                        var aesKeyLenght = config.aesLength / 8;                        
-                        var aesKey = keys.subarray(0, aesKeyLenght);
-                        var hmacKey = keys.subarray(aesKeyLenght);
-                        simpleCrypto.sym.decrypt({aesKey: aesKey, hmacKey: hmacKey}, encrypted, onError, function(decrypted) {
-                            onSuccess(decrypted);
-                            
-                        });
-                    }
-                );
-            },
 
             /** Decrypt
              *  
@@ -978,7 +1023,30 @@
                         });
                     });    
                 });
-            }
+            },
+            
+            
+            /** Decrypt with password (used to generate)
+             *  
+             * @method sym.decryptWithPassword
+             * @param {string} password - Password used to generate AES and HMAC keys
+             * @param {Uint8Array | ArrayBuffer} data - Data to encrypt
+             * @param {function} onError - called with error details if key generation or encryption fail
+             * @param {function} onSuccess - called with {aesEncrypted: ArrayBuffer, hmac: {ArrayBuffer}
+             */
+            decryptWithPassword: function(password, encrypted, onError, onSuccess) {
+                simpleCrypto.pbkdf2.derive(password, 288, {salt: encrypted.pbkdf2_salt, iterations: encrypted.pbkdf2_iter}, 
+                    onError.bind(null, "PBKDF2 error"), function(pbkdf2) {
+                        var keys = new Uint8Array(pbkdf2.derived);
+                        var aesKeyLenght = config.aesLength / 8;                        
+                        var aesKey = keys.subarray(0, aesKeyLenght);
+                        var hmacKey = keys.subarray(aesKeyLenght);
+                        simpleCrypto.sym.decrypt({aesKey: aesKey, hmacKey: hmacKey}, encrypted, onError, function(decrypted) {
+                            onSuccess(decrypted);
+                        });
+                    }
+                );
+            },
             
         },
         
@@ -1030,13 +1098,15 @@
                         // asymmetric
                         rsaEncrypted: 10,
                         signatureOfData: 20, signatureOfEncrypted: 21,
-                        pbkdf2_iter: 30, pbkdf2_salt: 31
+                        pbkdf2_iter: 30, pbkdf2_salt: 31,
+                        mimeType: 40
             },
             INDEX_TO_LABEL: {
                         0: "aesEncrypted", 1: "hmac",
                         10: "rsaEncrypted",
                         20: "signatureOfData", 21: "signatureOfEncrypted",
-                        30: "pbkdf2_iter", 31: "pbkdf2_salt"
+                        30: "pbkdf2_iter", 31: "pbkdf2_salt",
+                        40: "mimeType"
             },
         
          
@@ -1122,7 +1192,7 @@
             request.onupgradeneeded = function (e) {
                 var db = e.target.result;
                 e.target.transaction.onerror = function (event) {
-                    console.log("transaction failure", event);
+                    console.error("transaction failure", event);
                 };
                 db.createObjectStore("keys");
             };
@@ -1180,6 +1250,8 @@
             });
         }
     }
+    
+    simpleCrypto.util = util;
     
     return simpleCrypto;
 }));
