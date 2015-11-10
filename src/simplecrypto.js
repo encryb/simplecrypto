@@ -16,9 +16,9 @@
         oldIE = true;
     }
     
-    window.crypto = window.crypto || window.msCrypto;
-    window.crypto.subtle = window.crypto.subtle || window.crypto.webkitSubtle;
-    window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
+    var _crypto = window.crypto || window.msCrypto;
+    var _cryptoSubtle = _crypto.subtle || _crypto.webkitSubtle;
+    var _indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
         
     var config = {
         aesCipher: "AES-CBC",
@@ -32,11 +32,19 @@
         },
         
         rsaLength: 2048,
-        // (rsaLength / 8) - 2 - (2 * hash length)
-        rsaEncryptMax: 214,
-        
         rsaEncryptCipher: "RSA-OAEP",
         rsaEncryptHash: "SHA-1",
+        rsaEncryptHashLength: 160,
+        
+        get rsaEncryptMax() {
+            // Maximum message length is calculated as follows
+            // Maximum key length
+            // - length of hash of random
+            // - length of hash of encoding parameters
+            // - 2 for "01" used for border after 0 padding
+            return (this.rsaLength / 8) - (2 * this.rsaEncryptHashLength) - 2
+        }, 
+        
         rsaSignCipher: "RSASSA-PKCS1-v1_5",
         rsaSignHash: "SHA-256",
         
@@ -99,510 +107,494 @@
                 chars.push(str.charCodeAt(i));
             }
             return new Uint8Array(chars);
-        }
-    }
-
-    var random = {
-        get : function(max) {
+        },
+        
+        getRandom : function(max) {
             var MAX_UINT16 = 65535;
             if (max > MAX_UINT16 || max < 0) {
                 throw ("Invalid max value" + max);
             }
             var buffer = new Uint16Array(1);
-            window.crypto.getRandomValues(buffer);
+            _crypto.getRandomValues(buffer);
             return Math.floor(max * buffer[0] / MAX_UINT16);
         }
-    };
+    }
+
     
-    var _sym = {
-        generateKeyAES: function (onError, onSuccess) {                   
-            wrap(window.crypto.subtle.generateKey(
-                    { name: config.aesCipher, length: config.aesLength },
-                    true,
-                    ["encrypt", "decrypt"]
-                ),
-                onError,
-                function (aesKey) {
-                    onSuccess(aesKey);
-                }
-            );
-        },
-
-        generateKeyHMAC: function (onError, onSuccess) {
-            wrap(window.crypto.subtle.generateKey(
-                    config.hmacOptions,
-                    true,
-                    ["sign", "verify"]
-                ),
-                onError,
-                function (hmacKey) {
-                    onSuccess(hmacKey);
-                }
-            );
-        },
-
-        importKeyAES: function (key, onError, onSuccess) {   
-            wrap(window.crypto.subtle.importKey(
-                    "raw",
-                    key,
-                    { name: config.aesCipher },
-                    false,
-                    ["encrypt", "decrypt"]),
-                onError,
-                function (keyObj) {
-                    onSuccess(keyObj);
-                }
-            );               
-        },
-        importKeyHMAC: function(key, onError, onSuccess) {
-            wrap(window.crypto.subtle.importKey(
-                    "raw",
-                    key,
-                    config.hmacOptions,
-                    false,
-                    ["sign", "verify"]),
-                onError,
-                function (keyObj) {
-                    onSuccess(keyObj);
-                }
-            );
-        },
-                
-        exportKey: function (key, onError, onSuccess) {
-            wrap(window.crypto.subtle.exportKey("raw", key),
-                onError,
-                function (key) {
-                    onSuccess(key);
-                }
-            );
-        },
-        
-        encrypt: function(key, iv, data, onError, onSuccess) {
-            wrap(window.crypto.subtle.encrypt(
-                    { name: config.aesCipher, iv: iv },
-                    key,
-                    data
-                ),
-                onError,
-                function (encrypted) {
-                    var cipherdata = util.combineArrays(iv, encrypted);
-                    onSuccess(cipherdata.buffer);
-                }
-            );
-        },
-
-        decryptAES: function (key, cipherdata, onError, onSuccess) {
-            var iv, encrypted;
-            if (cipherdata instanceof Uint8Array) {
-                var offset = cipherdata.byteOffset;
-                var length = cipherdata.length;
-                iv = new Uint8Array(cipherdata.buffer, offset, 16);
-                encrypted = new Uint8Array(cipherdata.buffer, offset + 16, length-16);
-            }
-            else {
-                iv = new Uint8Array(cipherdata, 0, 16);
-                encrypted = new Uint8Array(cipherdata, 16);
-            }
-            
-            wrap(window.crypto.subtle.decrypt(
-                    { name: config.aesCipher, iv: iv },
-                    key,
-                    encrypted
-                ),
-                onError,
-                onSuccess
-            );
-        },
-
-        signHMAC: function(key, data, onError, onSuccess) {
-            wrap(window.crypto.subtle.sign(
-                    config.hmacOptions,
-                    key,
-                    data
-                ),
-                onError,
-                onSuccess
-            );
-        }, 
-
-        verifyHMAC: function (key, hmac, cipherdata, onError, onSuccess) {
-            wrap(window.crypto.subtle.verify(
-                    config.hmacOptions,
-                    key,
-                    hmac,
-                    cipherdata),
-                 onError,
-                 function (isValid) {
-                     if (!isValid) {
-                         onError("Invalid HMAC");
-                     }
-                     else {
-                         onSuccess();
-                     }
-                 }
-            );
-        },
-    };
-
-    var _asym = {
-        generateEncryptKeys: function(onError, onSuccess) {
-            wrap(window.crypto.subtle.generateKey(
-                    {
-                        name: config.rsaEncryptCipher,
-                        modulusLength: config.rsaLength,
-                        publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-                        hash: { name: config.rsaEncryptHash }
-                    },
-                    true,
-                    ["encrypt", "decrypt"]
-                ), 
-                onError,
-                onSuccess
-            );        
-        },
-        generateSignKeys: function (onError, onSuccess) {
-            wrap(window.crypto.subtle.generateKey(
-                    {
-                        name: config.rsaSignCipher,
-                        modulusLength: config.rsaLength,
-                        publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-                        hash: { name: config.rsaSignHash }
-                    },
-                    true,
-                    ["sign", "verify"]
-                ), 
-                onError,
-                onSuccess
-            );
-        },
-        
-        
-        _importKey: function(jwk, options, usage, onError, onSuccess) {
-            if(oldWebkit || oldIE) {
-                // make a copy, since might need this JWK for other things.
-                jwk = JSON.parse(JSON.stringify(jwk));
-                if (jwk.hasOwnProperty("ext")) {
-                    jwk.extractable = jwk.ext;
-                    delete jwk.ext;
-                }
-                if (jwk.hasOwnProperty("key_ops")) {
-                    delete jwk.key_ops;
-                }
-                jwk = util.stringToBytes(JSON.stringify(jwk));
-            }
-            
-            wrap(window.crypto.subtle.importKey(
-                    "jwk",
-                    jwk,
-                    options,
-                    false,
-                    usage 
-                ), onError,
-                function (privateKey) {
-                    onSuccess(privateKey);
-                }
-            );
-        },
-        
-        importEncryptKey: function(jwk, usage, onError, onSuccess) {
-            var options = { name: config.rsaEncryptCipher, hash: {name: config.rsaEncryptHash } };
-            this._importKey(jwk, options, usage, onError, onSuccess);
-                     
-        },
-        
-        importSignKey: function(jwk, usage, onError, onSuccess) {
-            var options = { name: config.rsaSignCipher, hash: { name: config.rsaSignHash } };
-            this._importKey(jwk, options, usage, onError, onSuccess);
-                     
-        },
-        
-        
-        exportKey: function(key, usage, onError, onSuccess) {
-            wrap(window.crypto.subtle.exportKey(
-                    "jwk",
-                    key
-                ), onError,
-                function (jwk) {
-
-                    if (oldWebkit || oldIE) {
-                        try {
-                            var fixedJwk = JSON.parse(util.bytesToString(jwk));
-  
-                            if (fixedJwk.hasOwnProperty("extractable")) {
-                                fixedJwk.ext = fixedJwk.extractable;
-                                delete fixedJwk.extractable;
-                            }
-                            if (!fixedJwk.hasOwnProperty("key_ops")) {
-                                fixedJwk.key_ops = usage;
-                            }
-                            if (!fixedJwk.hasOwnProperty("alg")) {
-                                fixedJwk.alg = key.algorithm.name.toUpperCase();
-                            }
-
-                            onSuccess(fixedJwk);
-                        }
-                        catch(e) {
-                            onError(e.message, e);
-                            return;
-                        }
+    var internal = {
+        sym : {
+            generateKeyAES: function (onError, onSuccess) {                   
+                wrap(_cryptoSubtle.generateKey(
+                        { name: config.aesCipher, length: config.aesLength },
+                        true,
+                        ["encrypt", "decrypt"]
+                    ),
+                    onError,
+                    function (aesKey) {
+                        onSuccess(aesKey);
                     }
-                    else {
-                        onSuccess(jwk);
-                    }
-                }
-            );
-        },
-        sign: function (key, data, onError, onSuccess) {
-            wrap(window.crypto.subtle.sign(
-                    { name: config.rsaSignCipher, hash: config.rsaSignHash },
-                    key, 
-                    data
-                ),
-                onError,
-                function (signature) {
-                    onSuccess(signature);
-                }
-            );
-        },
-
-        verifySignature: function(key, signature, data, onError, onSuccess) {
-            wrap(window.crypto.subtle.verify(
-                    { name: config.rsaSignCipher, hash: config.rsaSignHash },
-                    key,
-                    signature,
-                    data
-            ),
-            onError,
-            function (isValid) {
-                if (!isValid) {
-                    onError();
-                }
-                else {
-                    onSuccess();
-                }
-            });
-        },
-        
-        encrypt: function (publicKey, data, onError, onSuccess) {
-            wrap(window.crypto.subtle.encrypt(
-                    { name: config.rsaEncryptCipher, hash: config.rsaEncryptHash },
-                    publicKey,
-                    data
-                ),
-                onError,
-                function (encrypted) {
-                    onSuccess(encrypted);
-                }
-            );
-        },
-        
-        decrypt: function(privateKey, data, onError, onSuccess) {
-             wrap(window.crypto.subtle.decrypt(
-                    { name: config.rsaEncryptCipher, hash: config.rsaEncryptHash },
-                    privateKey,
-                    data
-             ),
-             onError,
-             function (keys) {
-                 onSuccess(keys);
-             });
-        },
-        
-        aesEncrypt: function(data, onError, onSuccess) {                        
-            simpleCrypto.sym.genKeysAndEncrypt(data, onError, function (aesDict) {
-                var combinedKeys = util.combineArrays(aesDict.keys.aesKey, aesDict.keys.hmacKey);
-                onSuccess(combinedKeys.buffer, aesDict.data);
-            });
-        },
-        
-        aesDecrypt: function(combinedkeys, data, onError, onSuccess) {
-            var aesKey, hmacKey, length;
-            
-            var aesLength = config.aesLength / 8;
-            // old webkit stores length in bytes, everything else in bits
-            var hmacLength = oldWebkit ? config.hmacOptions.length : (config.hmacOptions.length / 8);
-            
-            if (combinedkeys instanceof Uint8Array) {
-                var offset = combinedkeys.byteOffset;
-                length = combinedkeys.length;
-                if (length != (aesLength + hmacLength)) {
-                    onError("Combined keys size is incorrect", length, aesLength, hmacLength);
-                    return;
-                }
-                aesKey = new Uint8Array(combinedkeys.buffer, offset, aesLength);
-                hmacKey = new Uint8Array(combinedkeys.buffer, offset + aesLength, hmacLength);
-            }
-            else if (combinedkeys instanceof ArrayBuffer) {
-                length = combinedkeys.byteLength;
-                if (length != (aesLength + hmacLength)) {
-                    onError("Combined keys size is incorrect", length, aesLength, hmacLength);
-                    return;
-                }
-                aesKey = new Uint8Array(combinedkeys, 0, aesLength);
-                hmacKey = new Uint8Array(combinedkeys, aesLength);
-            }
-                
-            simpleCrypto.sym.decrypt({aesKey: aesKey, hmacKey: hmacKey}, data, onError, onSuccess);
-        }
-    },
-    _pbkdf2 = {
-         passwordToKey: function(password, onError, onSuccess) {
-            wrap(window.crypto.subtle.importKey(
-                    "raw",
-                    util.stringToBytes(password),
-                    {"name": "PBKDF2"},
-                    false,
-                    ["deriveBits"]
-                ),
-                onError,
-                onSuccess
                 );
-        },
-        deriveBits: function(key, length, options, onError, onSuccess) {
-            var salt = options.salt || window.crypto.getRandomValues(new Uint8Array(16));
-            var iterations;
-            if (options.iterations) {
-                if (options.iterations instanceof ArrayBuffer || options.iterations instanceof Uint8Array) {
-                    iterations = util.bufferToUint32(options.iterations);
-                }
-                else {
-                    iterations = options.iterations;
-                }
-            }
-            else {
-                iterations = (random.get(4000) + config.pbkdf2.minIterations);
-            }
-            wrap(window.crypto.subtle.deriveBits(
-                    {
-                        name: "PBKDF2",
-                        salt: salt,
-                        iterations: iterations,
-                        hash: {name: config.pbkdf2.hash}
-                    },
-                    key,
-                    length
-                ),
-                onError,
-                function(derived) {
-                    onSuccess({salt: salt.buffer, iterations: util.uint32toBuffer(iterations), derived: derived})
-                }
-            )
-        },
-        importKeyHMAC: function(password, onError, onSuccess) {
-            wrap(window.crypto.subtle.importKey(
-                    "raw",
-                    util.stringToBytes(password),
-                    {
-                        name: "HMAC",
-                        hash: { name: config.pbkdf2.hash },
-                    },
-                    false,
-                    ["sign", "verify"]
-                ),
-                onError,
-                onSuccess
-            );
-        },
-        importKeyHMAC2: function(password, onError, onSuccess) {
-            wrap(window.crypto.subtle.importKey(
-                    "raw",
-                    password,
-                    {
-                        name: "HMAC",
-                        hash: { name: config.pbkdf2.hash },
-                    },
-                    false,
-                    ["sign", "verify"]
-                ),
-                onError,
-                onSuccess
-            );
-        },
-        signHMAC: function(key, data, onError, onSuccess) {
-            wrap(window.crypto.subtle.sign(
-                    {
-                        name: "HMAC",
-                        hash: { name: config.pbkdf2.hash },
-                    },
-                    key,
-                    data
-                ),
-                onError,
-                onSuccess
-            );
-        },
-        
-        ua2hex: function(ua) {
-            var h = '';
-            for (var i = 0; i < ua.length; i++) {
-                h += ua[i].toString(16) + " ";
-            }
-            return h;
-        },
-        
-        compatDerive: function(password, bitLength, options, onError, onSuccess) {
-            
-            var salt = options.salt || window.crypto.getRandomValues(new Uint8Array(16));
-            var iterations;
-            if (options.iterations) {
-                if (options.iterations instanceof ArrayBuffer || options.iterations instanceof Uint8Array) {
-                    iterations = util.bufferToUint32(options.iterations);
-                }
-                else {
-                    iterations = options.iterations;
-                }
-            }
-            else {
-                iterations = (random.get(4000) + config.pbkdf2.minIterations);
-            }
-          
-
-            var deriveBlockLoop = function(key, U_1, U_n, counter, iterations, onError, onSuccess) {
-            
-                if (counter == iterations) {
-                    onSuccess(U_1);
-                    return;
-                }
-
-                _pbkdf2.signHMAC(key, U_n, onError, function(result) {
-                    var new_U_n = new Uint8Array(result);
-                    for (var i=0; i < U_1.length; i++){
-                        U_1[i] ^= new_U_n[i];
+            },
+    
+            generateKeyHMAC: function (onError, onSuccess) {
+                wrap(_cryptoSubtle.generateKey(
+                        config.hmacOptions,
+                        true,
+                        ["sign", "verify"]
+                    ),
+                    onError,
+                    function (hmacKey) {
+                        onSuccess(hmacKey);
                     }
+                );
+            },
+    
+            importKeyAES: function (key, onError, onSuccess) {   
+                wrap(_cryptoSubtle.importKey(
+                        "raw",
+                        key,
+                        { name: config.aesCipher },
+                        false,
+                        ["encrypt", "decrypt"]),
+                    onError,
+                    function (keyObj) {
+                        onSuccess(keyObj);
+                    }
+                );               
+            },
+            importKeyHMAC: function(key, onError, onSuccess) {
+                wrap(_cryptoSubtle.importKey(
+                        "raw",
+                        key,
+                        config.hmacOptions,
+                        false,
+                        ["sign", "verify"]),
+                    onError,
+                    function (keyObj) {
+                        onSuccess(keyObj);
+                    }
+                );
+            },
                     
-                    deriveBlockLoop(key, U_1, new_U_n, counter + 1, iterations, onError, onSuccess);
-                });  
-            }
+            exportKey: function (key, onError, onSuccess) {
+                wrap(_cryptoSubtle.exportKey("raw", key),
+                    onError,
+                    function (key) {
+                        onSuccess(key);
+                    }
+                );
+            },
             
-            var deriveLoop = function(key, blockNum, length, salt, iterations, output, onError, onSuccess) {
-
-                var data = util.combineArrays(salt, new Uint8Array([0,0,0,blockNum]));
-                _pbkdf2.signHMAC(key, data, onError, function(hmacBuffer) {
-                    var hmac = new Uint8Array(hmacBuffer);
-                    deriveBlockLoop(key, hmac, hmac, 1, iterations, onError, function(U_1) {
-                        var newOutput = new Uint8Array(util.combineArrays(output, U_1));
-                        if (newOutput.length == length) {
-                            onSuccess(newOutput.buffer);
-                        }
-                        else if (newOutput.length > length) {
-                            onSuccess(new Uint8Array(newOutput.subarray(0, length)).buffer);
+            encrypt: function(key, iv, data, onError, onSuccess) {
+                wrap(_cryptoSubtle.encrypt(
+                        { name: config.aesCipher, iv: iv },
+                        key,
+                        data
+                    ),
+                    onError,
+                    function (encrypted) {
+                        var cipherdata = util.combineArrays(iv, encrypted);
+                        onSuccess(cipherdata.buffer);
+                    }
+                );
+            },
+    
+            decryptAES: function (key, cipherdata, onError, onSuccess) {
+                var iv, encrypted;
+                if (cipherdata instanceof Uint8Array) {
+                    var offset = cipherdata.byteOffset;
+                    var length = cipherdata.length;
+                    iv = new Uint8Array(cipherdata.buffer, offset, 16);
+                    encrypted = new Uint8Array(cipherdata.buffer, offset + 16, length-16);
+                }
+                else {
+                    iv = new Uint8Array(cipherdata, 0, 16);
+                    encrypted = new Uint8Array(cipherdata, 16);
+                }
+                
+                wrap(_cryptoSubtle.decrypt(
+                        { name: config.aesCipher, iv: iv },
+                        key,
+                        encrypted
+                    ),
+                    onError,
+                    onSuccess
+                );
+            },
+    
+            signHMAC: function(key, data, onError, onSuccess) {
+                wrap(_cryptoSubtle.sign(
+                        config.hmacOptions,
+                        key,
+                        data
+                    ),
+                    onError,
+                    onSuccess
+                );
+            }, 
+    
+            verifyHMAC: function (key, hmac, cipherdata, onError, onSuccess) {
+                wrap(_cryptoSubtle.verify(
+                        config.hmacOptions,
+                        key,
+                        hmac,
+                        cipherdata),
+                    onError,
+                    function (isValid) {
+                        if (!isValid) {
+                            onError("Invalid HMAC");
                         }
                         else {
-                            deriveLoop(key, blockNum + 1, length, salt, iterations, newOutput, onError, onSuccess);
+                            onSuccess();
                         }
-                    });
-                });                
-            }
-          
-            _pbkdf2.importKeyHMAC(password, onError, function(key) {
-                deriveLoop(key, 1, bitLength / 8, salt, iterations, new Uint8Array(), onError, function(derived) {
-                    onSuccess({salt: salt.buffer, iterations: util.uint32toBuffer(iterations), derived: derived})
+                    }
+                );
+            },
+        },
+
+        asym: {
+            generateEncryptKeys: function(onError, onSuccess) {
+                wrap(_cryptoSubtle.generateKey(
+                        {
+                            name: config.rsaEncryptCipher,
+                            modulusLength: config.rsaLength,
+                            publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+                            hash: { name: config.rsaEncryptHash }
+                        },
+                        true,
+                        ["encrypt", "decrypt"]
+                    ), 
+                    onError,
+                    onSuccess
+                );        
+            },
+            generateSignKeys: function (onError, onSuccess) {
+                wrap(_cryptoSubtle.generateKey(
+                        {
+                            name: config.rsaSignCipher,
+                            modulusLength: config.rsaLength,
+                            publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+                            hash: { name: config.rsaSignHash }
+                        },
+                        true,
+                        ["sign", "verify"]
+                    ), 
+                    onError,
+                    onSuccess
+                );
+            },
+            
+            
+            _importKey: function(jwk, options, usage, onError, onSuccess) {
+                if(oldWebkit || oldIE) {
+                    // make a copy, since might need this JWK for other things.
+                    jwk = JSON.parse(JSON.stringify(jwk));
+                    if (jwk.hasOwnProperty("ext")) {
+                        jwk.extractable = jwk.ext;
+                        delete jwk.ext;
+                    }
+                    if (jwk.hasOwnProperty("key_ops")) {
+                        delete jwk.key_ops;
+                    }
+                    jwk = util.stringToBytes(JSON.stringify(jwk));
+                }
+                
+                wrap(_cryptoSubtle.importKey(
+                        "jwk",
+                        jwk,
+                        options,
+                        false,
+                        usage 
+                    ), onError,
+                    function (privateKey) {
+                        onSuccess(privateKey);
+                    }
+                );
+            },
+            
+            importEncryptKey: function(jwk, usage, onError, onSuccess) {
+                var options = { name: config.rsaEncryptCipher, hash: {name: config.rsaEncryptHash } };
+                this._importKey(jwk, options, usage, onError, onSuccess);
+                        
+            },
+            
+            importSignKey: function(jwk, usage, onError, onSuccess) {
+                var options = { name: config.rsaSignCipher, hash: { name: config.rsaSignHash } };
+                this._importKey(jwk, options, usage, onError, onSuccess);
+                        
+            },
+            
+            
+            exportKey: function(key, usage, onError, onSuccess) {
+                wrap(_cryptoSubtle.exportKey(
+                        "jwk",
+                        key
+                    ), onError,
+                    function (jwk) {
+    
+                        if (oldWebkit || oldIE) {
+                            try {
+                                var fixedJwk = JSON.parse(util.bytesToString(jwk));
+    
+                                if (fixedJwk.hasOwnProperty("extractable")) {
+                                    fixedJwk.ext = fixedJwk.extractable;
+                                    delete fixedJwk.extractable;
+                                }
+                                if (!fixedJwk.hasOwnProperty("key_ops")) {
+                                    fixedJwk.key_ops = usage;
+                                }
+                                if (!fixedJwk.hasOwnProperty("alg")) {
+                                    fixedJwk.alg = key.algorithm.name.toUpperCase();
+                                }
+    
+                                onSuccess(fixedJwk);
+                            }
+                            catch(e) {
+                                onError(e.message, e);
+                                return;
+                            }
+                        }
+                        else {
+                            onSuccess(jwk);
+                        }
+                    }
+                );
+            },
+            sign: function (key, data, onError, onSuccess) {
+                wrap(_cryptoSubtle.sign(
+                        { name: config.rsaSignCipher, hash: config.rsaSignHash },
+                        key, 
+                        data
+                    ),
+                    onError,
+                    function (signature) {
+                        onSuccess(signature);
+                    }
+                );
+            },
+    
+            verifySignature: function(key, signature, data, onError, onSuccess) {
+                wrap(_cryptoSubtle.verify(
+                        { name: config.rsaSignCipher, hash: config.rsaSignHash },
+                        key,
+                        signature,
+                        data
+                ),
+                onError,
+                function (isValid) {
+                    if (!isValid) {
+                        onError();
+                    }
+                    else {
+                        onSuccess();
+                    }
                 });
-            });
+            },
+            
+            encrypt: function (publicKey, data, onError, onSuccess) {
+                wrap(_cryptoSubtle.encrypt(
+                        { name: config.rsaEncryptCipher, hash: config.rsaEncryptHash },
+                        publicKey,
+                        data
+                    ),
+                    onError,
+                    function (encrypted) {
+                        onSuccess(encrypted);
+                    }
+                );
+            },
+            
+            extendData: function(data, onError, onSuccess) {
+                var dataLenght = data instanceof ArrayBuffer? data.byteLength : data.length;
+                if (dataLenght <= config.rsaEncryptMax) {
+                    onSuccess({"data" : data}, false);
+                    return;
+                }
+                
+                simpleCrypto.sym.genKeysAndEncrypt(data, onError, function (aesDict) {
+                    var combinedKeys = util.combineArrays(aesDict.keys.aesKey, aesDict.keys.hmacKey);
+                    var additionalData = { aesEncrypted: aesDict.data.aesEncrypted, hmac: aesDict.data.hmac};
+                    onSuccess({"data": combinedKeys, "additional": additionalData}, true);
+                });    
+                 
+            },
+
+            decrypt: function(privateKey, data, onError, onSuccess) {
+                wrap(_cryptoSubtle.decrypt(
+                        { name: config.rsaEncryptCipher, hash: config.rsaEncryptHash },
+                        privateKey,
+                        data
+                ),
+                onError,
+                function (keys) {
+                    onSuccess(keys);
+                });
+            },
+            
+            aesDecrypt: function(combinedkeys, data, onError, onSuccess) {
+                var aesKey, hmacKey, length;
+                
+                var aesLength = config.aesLength / 8;
+                // old webkit stores length in bytes, everything else in bits
+                var hmacLength = oldWebkit ? config.hmacOptions.length : (config.hmacOptions.length / 8);
+                
+                if (combinedkeys instanceof Uint8Array) {
+                    var offset = combinedkeys.byteOffset;
+                    length = combinedkeys.length;
+                    if (length != (aesLength + hmacLength)) {
+                        onError("Combined keys size is incorrect", length, aesLength, hmacLength);
+                        return;
+                    }
+                    aesKey = new Uint8Array(combinedkeys.buffer, offset, aesLength);
+                    hmacKey = new Uint8Array(combinedkeys.buffer, offset + aesLength, hmacLength);
+                }
+                else if (combinedkeys instanceof ArrayBuffer) {
+                    length = combinedkeys.byteLength;
+                    if (length != (aesLength + hmacLength)) {
+                        onError("Combined keys size is incorrect", length, aesLength, hmacLength);
+                        return;
+                    }
+                    aesKey = new Uint8Array(combinedkeys, 0, aesLength);
+                    hmacKey = new Uint8Array(combinedkeys, aesLength);
+                }
+                    
+                simpleCrypto.sym.decrypt({aesKey: aesKey, hmacKey: hmacKey}, data, onError, onSuccess);
+            }
+        },
+    
+        pbkdf2: {
+            passwordToKey: function(password, onError, onSuccess) {
+                wrap(_cryptoSubtle.importKey(
+                        "raw",
+                        util.stringToBytes(password),
+                        {"name": "PBKDF2"},
+                        false,
+                        ["deriveBits"]
+                    ),
+                    onError,
+                    onSuccess
+                    );
+            },
+            deriveBits: function(key, length, options, onError, onSuccess) {
+                var salt = options.salt || _crypto.getRandomValues(new Uint8Array(16));
+                var iterations;
+                if (options.iterations) {
+                    if (options.iterations instanceof ArrayBuffer || options.iterations instanceof Uint8Array) {
+                        iterations = util.bufferToUint32(options.iterations);
+                    }
+                    else {
+                        iterations = options.iterations;
+                    }
+                }
+                else {
+                    iterations = (util.getRandom(4000) + config.pbkdf2.minIterations);
+                }
+                wrap(_cryptoSubtle.deriveBits(
+                        {
+                            name: "PBKDF2",
+                            salt: salt,
+                            iterations: iterations,
+                            hash: {name: config.pbkdf2.hash}
+                        },
+                        key,
+                        length
+                    ),
+                    onError,
+                    function(derived) {
+                        onSuccess({salt: salt.buffer, iterations: util.uint32toBuffer(iterations), derived: derived})
+                    }
+                )
+            },
+            importKeyHMAC: function(password, onError, onSuccess) {
+                wrap(_cryptoSubtle.importKey(
+                        "raw",
+                        util.stringToBytes(password),
+                        {
+                            name: "HMAC",
+                            hash: { name: config.pbkdf2.hash },
+                        },
+                        false,
+                        ["sign", "verify"]
+                    ),
+                    onError,
+                    onSuccess
+                );
+            },
+            signHMAC: function(key, data, onError, onSuccess) {
+                wrap(_cryptoSubtle.sign(
+                        {
+                            name: "HMAC",
+                            hash: { name: config.pbkdf2.hash },
+                        },
+                        key,
+                        data
+                    ),
+                    onError,
+                    onSuccess
+                );
+            },
+            
+            compatDerive: function(password, bitLength, options, onError, onSuccess) {
+                
+                var salt = options.salt || _crypto.getRandomValues(new Uint8Array(16));
+                var iterations;
+                if (options.iterations) {
+                    if (options.iterations instanceof ArrayBuffer || options.iterations instanceof Uint8Array) {
+                        iterations = util.bufferToUint32(options.iterations);
+                    }
+                    else {
+                        iterations = options.iterations;
+                    }
+                }
+                else {
+                    iterations = (util.getRandom(4000) + config.pbkdf2.minIterations);
+                }
+            
+    
+                var deriveBlockLoop = function(key, U_1, U_n, counter, iterations, onError, onSuccess) {
+                
+                    if (counter == iterations) {
+                        onSuccess(U_1);
+                        return;
+                    }
+    
+                    internal.pbkdf2.signHMAC(key, U_n, onError, function(result) {
+                        var new_U_n = new Uint8Array(result);
+                        for (var i=0; i < U_1.length; i++){
+                            U_1[i] ^= new_U_n[i];
+                        }
+                        
+                        deriveBlockLoop(key, U_1, new_U_n, counter + 1, iterations, onError, onSuccess);
+                    });  
+                }
+                
+                var deriveLoop = function(key, blockNum, length, salt, iterations, output, onError, onSuccess) {
+    
+                    var data = util.combineArrays(salt, new Uint8Array([0,0,0,blockNum]));
+                    internal.pbkdf2.signHMAC(key, data, onError, function(hmacBuffer) {
+                        var hmac = new Uint8Array(hmacBuffer);
+                        deriveBlockLoop(key, hmac, hmac, 1, iterations, onError, function(U_1) {
+                            var newOutput = new Uint8Array(util.combineArrays(output, U_1));
+                            if (newOutput.length == length) {
+                                onSuccess(newOutput.buffer);
+                            }
+                            else if (newOutput.length > length) {
+                                onSuccess(new Uint8Array(newOutput.subarray(0, length)).buffer);
+                            }
+                            else {
+                                deriveLoop(key, blockNum + 1, length, salt, iterations, newOutput, onError, onSuccess);
+                            }
+                        });
+                    });                
+                }
+            
+                internal.pbkdf2.importKeyHMAC(password, onError, function(key) {
+                    deriveLoop(key, 1, bitLength / 8, salt, iterations, new Uint8Array(), onError, function(derived) {
+                        onSuccess({salt: salt.buffer, iterations: util.uint32toBuffer(iterations), derived: derived})
+                    });
+                });
+            }       
         }
-        
-        
-         
     }
 
     
@@ -684,8 +676,8 @@
              * @param {function} onSuccess - called with {privateKey: CryptoKey, publicKey: CryptoKey, privateJwk: JWK, publicJwk: JWK} 
              */
             importEncryptKey: function (publicJwk, privateJwk, onError, onSuccess) {
-                _asym.importEncryptKey(privateJwk, ["decrypt"], onError.bind(null, "decrypt key"), function(privateKey) {
-                    _asym.importEncryptKey(publicJwk, ["encrypt"], onError.bind(null, "encrypt key"), function(publicKey) {
+                internal.asym.importEncryptKey(privateJwk, ["decrypt"], onError.bind(null, "decrypt key"), function(privateKey) {
+                    internal.asym.importEncryptKey(publicJwk, ["encrypt"], onError.bind(null, "encrypt key"), function(publicKey) {
                         onSuccess({privateKey: privateKey, publicKey: publicKey, 
                                 privateJwk: privateJwk, publicJwk: publicJwk});
                    });    
@@ -702,7 +694,7 @@
              * @param {function} onSuccess - called with privateKey CryptoKey
              */
             importEncryptPrivateKey: function (privateJwk, onError, onSuccess) {
-                _asym.importEncryptKey(privateJwk, ["decrypt"], onError.bind(null, "decrypt key"), function(privateKey) {
+                internal.asym.importEncryptKey(privateJwk, ["decrypt"], onError.bind(null, "decrypt key"), function(privateKey) {
                     onSuccess(privateKey);
                });    
             },
@@ -716,7 +708,7 @@
              * @param {function} onSuccess - called with publicKey CryptoKey
              */
             importEncryptPublicKey: function(publicJwk, onError, onSuccess) {
-                _asym.importEncryptKey(publicJwk, ["encrypt"], onError.bind(null, "encrypt key"), function(publicKey) {
+                internal.asym.importEncryptKey(publicJwk, ["encrypt"], onError.bind(null, "encrypt key"), function(publicKey) {
                     onSuccess(publicKey);
                 });    
             },
@@ -730,10 +722,10 @@
              */
             generateEncryptKey: function (onError, onSuccess) {
 
-                _asym.generateEncryptKeys(onError.bind(null, "Could not generate encrypt key"), function(keys) {
-                 _asym.exportKey(keys.publicKey, ["encrypt"], onError.bind(null, "Could not export public encrypt key"), function(publicJwk) {
-                  _asym.exportKey(keys.privateKey, ["decrypt"], onError.bind(null, "Could not export private encrypt key"), function(privateJwk){
-                   _asym.importEncryptKey(privateJwk, ["decrypt"], onError.bind(null, "Could not import private encrypt key"), function(privateKey) {
+                internal.asym.generateEncryptKeys(onError.bind(null, "Could not generate encrypt key"), function(keys) {
+                 internal.asym.exportKey(keys.publicKey, ["encrypt"], onError.bind(null, "Could not export public encrypt key"), function(publicJwk) {
+                  internal.asym.exportKey(keys.privateKey, ["decrypt"], onError.bind(null, "Could not export private encrypt key"), function(privateJwk){
+                   internal.asym.importEncryptKey(privateJwk, ["decrypt"], onError.bind(null, "Could not import private encrypt key"), function(privateKey) {
 
                      onSuccess({privateKey: privateKey, publicKey: keys.publicKey, 
                                 privateJwk: privateJwk, publicJwk: publicJwk});
@@ -753,10 +745,10 @@
              */
             generateSignKey: function (onError, onSuccess) {
 
-                _asym.generateSignKeys(onError.bind(null, "Could not generate sign key"), function(keys) {
-                 _asym.exportKey(keys.publicKey, ["verify"], onError.bind(null, "Could not export public sign key"), function(publicJwk) {
-                  _asym.exportKey(keys.privateKey, ["sign"], onError.bind(null, "Could not export private sign key"), function(privateJwk){
-                   _asym.importSignKey(privateJwk, ["sign"], onError.bind(null, "Could not import private sign key"), function(privateKey) {
+                internal.asym.generateSignKeys(onError.bind(null, "Could not generate sign key"), function(keys) {
+                 internal.asym.exportKey(keys.publicKey, ["verify"], onError.bind(null, "Could not export public sign key"), function(publicJwk) {
+                  internal.asym.exportKey(keys.privateKey, ["sign"], onError.bind(null, "Could not export private sign key"), function(privateJwk){
+                   internal.asym.importSignKey(privateJwk, ["sign"], onError.bind(null, "Could not import private sign key"), function(privateKey) {
 
                      onSuccess({privateKey: privateKey, publicKey: keys.publicKey, 
                                 privateJwk: privateJwk, publicJwk: publicJwk});
@@ -780,12 +772,12 @@
              */
             decrypt: function (decryptKey, dict, onError, onSuccess) {
                 if (dict.aesEncrypted) {
-                    _asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, "Could not decrypt keys"), function(combinedKeys){
-                        _asym.aesDecrypt(combinedKeys, { aesEncrypted: dict.aesEncrypted, hmac: dict.hmac }, onError, onSuccess);
+                    internal.asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, "Could not decrypt keys"), function(combinedKeys){
+                        internal.asym.aesDecrypt(combinedKeys, { aesEncrypted: dict.aesEncrypted, hmac: dict.hmac }, onError, onSuccess);
                     });
                 }
                 else {
-                    _asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, "Could not RSA decrypt"), onSuccess);
+                    internal.asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, "Could not RSA decrypt"), onSuccess);
                 }
             },
 
@@ -801,11 +793,11 @@
              * @param {function} onSuccess - called with decrypted ArrayBuffer
              */
             verifyAndDecrypt: function (decryptKey, verifyKey, dict, onError, onSuccess) {
-                _asym.verifySignature(verifyKey, dict.signatureOfEncrypted, dict.rsaEncrypted, onError.bind(null, "Could not verify encrypted keys"), function(){
-                    _asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, "Could not decrypt keys"), function(decrypted){
-                        _asym.verifySignature(verifyKey, dict.signatureOfData, decrypted, onError.bind(null, "Could not verify keys"), function(){
+                internal.asym.verifySignature(verifyKey, dict.signatureOfEncrypted, dict.rsaEncrypted, onError.bind(null, "Could not verify encrypted keys"), function(){
+                    internal.asym.decrypt(decryptKey, dict.rsaEncrypted, onError.bind(null, "Could not decrypt keys"), function(decrypted){
+                        internal.asym.verifySignature(verifyKey, dict.signatureOfData, decrypted, onError.bind(null, "Could not verify keys"), function(){
                             if (dict.aesEncrypted) {
-                                _asym.aesDecrypt(decrypted, { aesEncrypted: dict.aesEncrypted, hmac: dict.hmac }, onError, onSuccess);
+                                internal.asym.aesDecrypt(decrypted, { aesEncrypted: dict.aesEncrypted, hmac: dict.hmac }, onError, onSuccess);
                             }
                             else {
                                 onSuccess(decrypted);
@@ -813,30 +805,6 @@
                         });
                     });
                 });
-            },
-            
-            _encrypt: function(encryptKey, data, rawData, onError, onSuccess) {
-                
-                var dataLenght = data instanceof ArrayBuffer? data.byteLength : data.length;
-                if (dataLenght <= config.rsaEncryptMax) {
-                    _asym.encrypt(encryptKey, data, onError.bind("Could not RSA encrypt data"), function(encrypted) {
-                        rawData["data"] = data;
-                        onSuccess({rsaEncrypted: encrypted});
-                    });
-                }
-                else {
-                    _asym.aesEncrypt(data, onError.bind(null, "Could not AES encrypt data"), function(combinedKeys, encrypted){
-                        _asym.encrypt(encryptKey, combinedKeys, onError.bind("Could not encrypt AES keys"), function(encryptedKeys) {
-                            rawData["data"] = combinedKeys;
-                            onSuccess({
-                                // AES encryption output 
-                                aesEncrypted: encrypted.aesEncrypted, hmac: encrypted.hmac,
-                                // RSA encrypted symmetric encryption keys 
-                                rsaEncrypted: encryptedKeys,
-                            });         
-                        });           
-                    });
-                } 
             },
             
             /**
@@ -850,8 +818,17 @@
              * @param {function} onSuccess - called with {rsaEncrypted: , aesEncrypted?: , hmacEncrypted?:}
              */
             encrypt: function(encryptKey, data, onError, onSuccess) {
-                var rawData = {};
-                this._encrypt(encryptKey, data, rawData, onError, onSuccess);
+                internal.asym.extendData(data, onError, function(extendedData, wasExtended) {
+                    internal.asym.encrypt(encryptKey, extendedData.data, onError, function(encryptedData) {
+                        var result = {rsaEncrypted: encryptedData};
+                        
+                        if (wasExtended) {
+                            result["aesEncrypted"] = extendedData.additional.aesEncrypted;
+                            result["hmac"] = extendedData.additional.hmac;
+                        }
+                        onSuccess(result);
+                    }); 
+                });
             },
             
             /**
@@ -867,19 +844,26 @@
              * @param {function} onSuccess - called with decrypted ArrayBuffer
              */
             encryptAndSign: function (encryptKey, signKey, data, onError, onSuccess) {
-                var rawData = {};
                 // encrypt data
                 // sign data
                 // sign encrypted data
-                this._encrypt(encryptKey, data, rawData, onError, function(encrypted) {    
-                    _asym.sign(signKey, rawData.data, onError.bind(null, "Could not sign raw data"), function(signatureOfData) {
-                        _asym.sign(signKey, encrypted.rsaEncrypted, onError.bind(null, "Could not sign encrypted data"), function(signatureOfEncrypted) {
-                            encrypted["signatureOfData"] = signatureOfData;
-                            encrypted["signatureOfEncrypted"] = signatureOfEncrypted;
-                            onSuccess(encrypted);         
-                        });       
-                    });
-                });
+                internal.asym.extendData(data, onError, function(extendedData, wasExtended) {
+                    internal.asym.encrypt(encryptKey, extendedData.data, onError, function(encryptedData) {
+                        internal.asym.sign(signKey, extendedData.data, onError.bind(null, "Could not sign raw data"), function(signatureOfData) {
+                            internal.asym.sign(signKey, encryptedData, onError.bind(null, "Could not sign encrypted data"), function(signatureOfEncrypted) {
+                                var result = {rsaEncrypted: encryptedData};
+                                result["signatureOfData"] = signatureOfData;
+                                result["signatureOfEncrypted"] = signatureOfEncrypted;
+                            
+                                if (wasExtended) {
+                                    result["aesEncrypted"] = extendedData.additional.aesEncrypted;
+                                    result["hmac"] = extendedData.additional.hmac;
+                                }
+                                onSuccess(result);
+                            });
+                        });
+                    }); 
+                });                
             },
         },
 
@@ -901,12 +885,12 @@
                 // generate random AES and HMAC keys
                 // export them in RAW format
                 // import them back as non-extractable keys, so that we can store in the database
-                _sym.generateKeyAES(onError.bind(null, "Could not generate AES key"), function(aesKeyObj){
-                 _sym.generateKeyHMAC(onError.bind(null, "Could not generate HMAC key"), function(hmacKeyObj){
-                  _sym.exportKey(aesKeyObj, onError.bind(null, "Could not export AES key"), function(aesKey) {
-                   _sym.exportKey(hmacKeyObj, onError.bind(null, "Could not export HMAC key"), function(hmacKey) {
-                    _sym.importKeyAES(aesKey, onError.bind(null, "Could not import AES key"), function(aesKeyObjNotExtract) {
-                     _sym.importKeyHMAC(hmacKey, onError.bind(null, "Could not import HMAC key"), function(hmacKeyObjNotExtract) {
+                internal.sym.generateKeyAES(onError.bind(null, "Could not generate AES key"), function(aesKeyObj){
+                 internal.sym.generateKeyHMAC(onError.bind(null, "Could not generate HMAC key"), function(hmacKeyObj){
+                  internal.sym.exportKey(aesKeyObj, onError.bind(null, "Could not export AES key"), function(aesKey) {
+                   internal.sym.exportKey(hmacKeyObj, onError.bind(null, "Could not export HMAC key"), function(hmacKey) {
+                    internal.sym.importKeyAES(aesKey, onError.bind(null, "Could not import AES key"), function(aesKeyObjNotExtract) {
+                     internal.sym.importKeyHMAC(hmacKey, onError.bind(null, "Could not import HMAC key"), function(hmacKeyObjNotExtract) {
                        onSuccess({aesKeyObj: aesKeyObjNotExtract, hmacKeyObj: hmacKeyObjNotExtract, aesKey: aesKey, hmacKey: hmacKey});    
                      }); }); }); }); }); });
             },
@@ -931,9 +915,9 @@
                     return;
                 }
                 
-                _sym.importKeyAES(keys.aesKey, onError.bind(null, "Could not import AES key"), function(aesKeyObj) {
+                internal.sym.importKeyAES(keys.aesKey, onError.bind(null, "Could not import AES key"), function(aesKeyObj) {
                     keys["aesKeyObj"] = aesKeyObj;
-                    _sym.importKeyHMAC(keys.hmacKey, onError.bind(null, "Could not import HMAC key"), function(hmacKeyObj) {
+                    internal.sym.importKeyHMAC(keys.hmacKey, onError.bind(null, "Could not import HMAC key"), function(hmacKeyObj) {
                         keys["hmacKeyObj"] = hmacKeyObj;
                         onSuccess(keys);
                     });
@@ -971,11 +955,11 @@
                         iv = keys.iv; 
                     }
                     else {
-                        iv = window.crypto.getRandomValues(new Uint8Array(config.aesIvLength));
+                        iv = _crypto.getRandomValues(new Uint8Array(config.aesIvLength));
                     }
 
-                    _sym.encrypt(keys.aesKeyObj, iv, data, onError.bind(null, "Could not AES Encrypt"), function(aesEncrypted){
-                        _sym.signHMAC(keys.hmacKeyObj, aesEncrypted, onError.bind(null, "Could not HMAC sign"), function(hmac) {
+                    internal.sym.encrypt(keys.aesKeyObj, iv, data, onError.bind(null, "Could not AES Encrypt"), function(aesEncrypted){
+                        internal.sym.signHMAC(keys.hmacKeyObj, aesEncrypted, onError.bind(null, "Could not HMAC sign"), function(hmac) {
                             var encrypted = { aesEncrypted: aesEncrypted, hmac: hmac };
                             onSuccess(encrypted);                           
                         });  
@@ -1017,8 +1001,8 @@
              */
             decrypt: function (keys, encrypted, onError, onSuccess) {
                 simpleCrypto.sym.importKeys(keys, onError, function(){
-                    _sym.verifyHMAC(keys.hmacKeyObj, encrypted.hmac, encrypted.aesEncrypted, onError.bind(null, "Could not verify HMAC"), function(){
-                        _sym.decryptAES(keys.aesKeyObj, encrypted.aesEncrypted, onError.bind(null, "Could not AES decrypt"), function(decrypted) {
+                    internal.sym.verifyHMAC(keys.hmacKeyObj, encrypted.hmac, encrypted.aesEncrypted, onError.bind(null, "Could not verify HMAC"), function(){
+                        internal.sym.decryptAES(keys.aesKeyObj, encrypted.aesEncrypted, onError.bind(null, "Could not AES decrypt"), function(decrypted) {
                             onSuccess(decrypted);
                         });
                     });    
@@ -1052,7 +1036,7 @@
         
         /** 
          * Password-Based Key Derivation Function 2
-         * @class pbkdf2
+         * @class Password-Based Key Derivation
          */
         pbkdf2 : {
             
@@ -1068,19 +1052,19 @@
             derive: function(password, bitLength, options, onError, onSuccess) {
                 
                 try {
-                    _pbkdf2.passwordToKey(password, 
+                    internal.pbkdf2.passwordToKey(password, 
                         // lot of browsers/platforms don't support PBKDF2. Try compat method.
                         function(error) {
-                            _pbkdf2.compatDerive(password, bitLength, options, onError.bind(null, "Compat: could not derive bits"), onSuccess);
+                            internal.pbkdf2.compatDerive(password, bitLength, options, onError.bind(null, "Compat: could not derive bits"), onSuccess);
                         },
                         // PBKDF2 works, derive bits.
                         function(key) {
-                            _pbkdf2.deriveBits(key, bitLength, options, onError.bind(null, "Could not derive bits"), onSuccess);
+                            internal.pbkdf2.deriveBits(key, bitLength, options, onError.bind(null, "Could not derive bits"), onSuccess);
                         }
                     );
                 } catch (e) {
                     // IE will not return onError, but instead throw an exception
-                    _pbkdf2.compatDerive(password, bitLength, options, onError.bind(null, "Compat: could not derive bits"), onSuccess);
+                    internal.pbkdf2.compatDerive(password, bitLength, options, onError.bind(null, "Compat: could not derive bits"), onSuccess);
                 }
             }
         },
@@ -1187,7 +1171,7 @@
     var dbUtil = {
         _version: 1,
         _openDB: function(onError, onSuccess, func) {
-            var request = indexedDB.open("simplecrypto", this._version);
+            var request = _indexedDB.open("simplecrypto", this._version);
 
             request.onupgradeneeded = function (e) {
                 var db = e.target.result;
@@ -1252,6 +1236,7 @@
     }
     
     simpleCrypto.util = util;
+    simpleCrypto.internal = internal;
     
     return simpleCrypto;
 }));

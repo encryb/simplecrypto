@@ -1,7 +1,7 @@
 {
     "name": "simplecrypto.js",
     "description": "Simple Crypto Library build on WebCrypto",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "url": "https://github.com/encryb/simplecrypto",
     "logo": "https://www.encryb.com/img/crib-md.png",
     "options": {

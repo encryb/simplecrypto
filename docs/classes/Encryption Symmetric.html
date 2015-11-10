@@ -17,7 +17,7 @@
                 <h1><img src="https://www.encryb.com/img/crib-md.png" title="simplecrypto.js"></h1>
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.0.2</em>
+            <em>API Docs for: 0.0.3</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -42,6 +42,7 @@
                                 <li><a href="../classes/Encryption Symmetric.html">Encryption Symmetric</a></li>
                                 <li><a href="../classes/Key Storage.html">Key Storage</a></li>
                                 <li><a href="../classes/Packaging.html">Packaging</a></li>
+                                <li><a href="../classes/Password-Based Key Derivation.html">Password-Based Key Derivation</a></li>
                             </ul>
                 
                             <ul id="api-modules" class="apis modules">
@@ -84,7 +85,7 @@
 
 
         <div class="foundat">
-            Defined in: <a href="../files/src_simplecrypto.js.html#l622"><code>src\simplecrypto.js:622</code></a>
+            Defined in: <a href="../files/src_simplecrypto.js.html#l871"><code>src\simplecrypto.js:871</code></a>
         </div>
 
             Module: <a href="../modules/simpleCrypto.html">simpleCrypto</a>
@@ -118,7 +119,15 @@
 
                             </li>
                             <li class="index-item method">
+                                <a href="#method_sym.decryptWithPassword">sym.decryptWithPassword</a>
+
+                            </li>
+                            <li class="index-item method">
                                 <a href="#method_sym.encrypt">sym.encrypt</a>
+
+                            </li>
+                            <li class="index-item method">
+                                <a href="#method_sym.encryptWithPassword">sym.encryptWithPassword</a>
 
                             </li>
                             <li class="index-item method">
@@ -173,7 +182,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/src_simplecrypto.js.html#l717"><code>src\simplecrypto.js:717</code></a>
+        <a href="../files/src_simplecrypto.js.html#l994"><code>src\simplecrypto.js:994</code></a>
         </p>
 
 
@@ -196,6 +205,109 @@
                     <div class="param-description">
                         <ul>
 <li>AES and HMAC keys. Also optional IV (otherwise random is generated)</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">data</code>
+                        <span class="type">Uint8Array | ArrayBuffer</span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>Data to encrypt</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">onError</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function" class="crosslink external" target="_blank">Function</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>called with error details if key generation or encryption fail</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">onSuccess</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function" class="crosslink external" target="_blank">Function</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>called with {aesEncrypted: ArrayBuffer, hmac: {ArrayBuffer}</li>
+</ul>
+
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+
+
+</div>
+<div id="method_sym.decryptWithPassword" class="method item">
+    <h3 class="name"><code>sym.decryptWithPassword</code></h3>
+
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+                <li class="arg">
+                        <code>password</code>
+                </li>
+                <li class="arg">
+                        <code>data</code>
+                </li>
+                <li class="arg">
+                        <code>onError</code>
+                </li>
+                <li class="arg">
+                        <code>onSuccess</code>
+                </li>
+            </ul><span class="paren">)</span>
+        </div>
+
+
+
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_simplecrypto.js.html#l1013"><code>src\simplecrypto.js:1013</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        
+    </div>
+
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+                <li class="param">
+                        <code class="param-name">password</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/String" class="crosslink external" target="_blank">String</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>Password used to generate AES and HMAC keys</li>
 </ul>
 
                     </div>
@@ -276,7 +388,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/src_simplecrypto.js.html#l690"><code>src\simplecrypto.js:690</code></a>
+        <a href="../files/src_simplecrypto.js.html#l942"><code>src\simplecrypto.js:942</code></a>
         </p>
 
 
@@ -299,6 +411,109 @@
                     <div class="param-description">
                         <ul>
 <li>AES and HMAC keys. Also optional IV (otherwise random is generated)</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">data</code>
+                        <span class="type">Uint8Array | ArrayBuffer</span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>Data to encrypt</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">onError</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function" class="crosslink external" target="_blank">Function</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>called with error details if key generation or encryption fail</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">onSuccess</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function" class="crosslink external" target="_blank">Function</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>called with {aesEncrypted: ArrayBuffer, hmac: {ArrayBuffer}</li>
+</ul>
+
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+
+
+</div>
+<div id="method_sym.encryptWithPassword" class="method item">
+    <h3 class="name"><code>sym.encryptWithPassword</code></h3>
+
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+                <li class="arg">
+                        <code>password</code>
+                </li>
+                <li class="arg">
+                        <code>data</code>
+                </li>
+                <li class="arg">
+                        <code>onError</code>
+                </li>
+                <li class="arg">
+                        <code>onSuccess</code>
+                </li>
+            </ul><span class="paren">)</span>
+        </div>
+
+
+
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_simplecrypto.js.html#l971"><code>src\simplecrypto.js:971</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        
+    </div>
+
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+                <li class="param">
+                        <code class="param-name">password</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/String" class="crosslink external" target="_blank">String</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>Password used to generate AES and HMAC keys</li>
 </ul>
 
                     </div>
@@ -373,7 +588,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/src_simplecrypto.js.html#l628"><code>src\simplecrypto.js:628</code></a>
+        <a href="../files/src_simplecrypto.js.html#l877"><code>src\simplecrypto.js:877</code></a>
         </p>
 
 
@@ -447,7 +662,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/src_simplecrypto.js.html#l675"><code>src\simplecrypto.js:675</code></a>
+        <a href="../files/src_simplecrypto.js.html#l927"><code>src\simplecrypto.js:927</code></a>
         </p>
 
 
@@ -534,7 +749,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/src_simplecrypto.js.html#l646"><code>src\simplecrypto.js:646</code></a>
+        <a href="../files/src_simplecrypto.js.html#l898"><code>src\simplecrypto.js:898</code></a>
         </p>
 
 

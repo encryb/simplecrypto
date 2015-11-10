@@ -2,7 +2,7 @@
     "project": {
         "name": "simplecrypto.js",
         "description": "Simple Crypto Library build on WebCrypto",
-        "version": "0.0.2",
+        "version": "0.0.3",
         "url": "https://github.com/encryb/simplecrypto",
         "logo": "https://www.encryb.com/img/crib-md.png"
     },
@@ -16,6 +16,7 @@
                 "Key Storage": 1,
                 "Encryption Asymmetric": 1,
                 "Encryption Symmetric": 1,
+                "Password-Based Key Derivation": 1,
                 "Packaging": 1
             },
             "fors": {},
@@ -30,13 +31,14 @@
                 "Key Storage": 1,
                 "Encryption Asymmetric": 1,
                 "Encryption Symmetric": 1,
+                "Password-Based Key Derivation": 1,
                 "Packaging": 1
             },
             "fors": {},
             "namespaces": {},
             "tag": "module",
             "file": "src\\simplecrypto.js",
-            "line": 736,
+            "line": 1071,
             "description": "Simple Crypto Javascript library built on WebCrypto and IndexedDB"
         }
     },
@@ -52,7 +54,7 @@
             "module": "simpleCrypto",
             "namespace": "",
             "file": "src\\simplecrypto.js",
-            "line": 396,
+            "line": 607,
             "description": "Secure CryptoKey storage"
         },
         "Encryption Asymmetric": {
@@ -66,7 +68,7 @@
             "module": "simpleCrypto",
             "namespace": "",
             "file": "src\\simplecrypto.js",
-            "line": 438,
+            "line": 649,
             "description": "Asymmetric Encryption"
         },
         "Encryption Symmetric": {
@@ -80,8 +82,22 @@
             "module": "simpleCrypto",
             "namespace": "",
             "file": "src\\simplecrypto.js",
-            "line": 622,
+            "line": 871,
             "description": "Symmetric Encryption"
+        },
+        "Password-Based Key Derivation": {
+            "name": "Password-Based Key Derivation",
+            "shortname": "Password-Based Key Derivation",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": [],
+            "module": "simpleCrypto",
+            "namespace": "",
+            "file": "src\\simplecrypto.js",
+            "line": 1037,
+            "description": "Password-Based Key Derivation Function 2"
         },
         "Packaging": {
             "name": "Packaging",
@@ -94,14 +110,14 @@
             "module": "simpleCrypto",
             "namespace": "",
             "file": "src\\simplecrypto.js",
-            "line": 736,
+            "line": 1071,
             "description": "Encoding/Decoding for encrypted data transport"
         }
     },
     "classitems": [
         {
             "file": "src\\simplecrypto.js",
-            "line": 401,
+            "line": 612,
             "description": "Get key from secure storage",
             "itemtype": "method",
             "name": "storage.get",
@@ -127,7 +143,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 412,
+            "line": 623,
             "description": "Put key in secure storage",
             "itemtype": "method",
             "name": "storage.put",
@@ -158,7 +174,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 425,
+            "line": 636,
             "description": "Delete key from secure storage",
             "itemtype": "method",
             "name": "storage.delete",
@@ -184,7 +200,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 443,
+            "line": 654,
             "description": "Generate RSA encryption and signature keys",
             "itemtype": "method",
             "name": "asym.generateKeys",
@@ -205,7 +221,95 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 458,
+            "line": 669,
+            "description": "Import RSA encryption keys.",
+            "itemtype": "method",
+            "name": "asym.importEncryptKey",
+            "params": [
+                {
+                    "name": "publicJwk",
+                    "description": "- public (decrypt) JSON key",
+                    "type": "Object"
+                },
+                {
+                    "name": "privateJwk",
+                    "description": "- private (encrypt) JSON key",
+                    "type": "Object"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if import fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with {privateKey: CryptoKey, publicKey: CryptoKey, privateJwk: JWK, publicJwk: JWK}",
+                    "type": "Function"
+                }
+            ],
+            "class": "Encryption Asymmetric",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 687,
+            "description": "Import RSA private encryption keys.",
+            "itemtype": "method",
+            "name": "asym.importEncryptPrivateKey",
+            "params": [
+                {
+                    "name": "publicJwk",
+                    "description": "- public (decrypt) JSON key",
+                    "type": "Object"
+                },
+                {
+                    "name": "privateJwk",
+                    "description": "- private (encrypt) JSON key",
+                    "type": "Object"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if import fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with privateKey CryptoKey",
+                    "type": "Function"
+                }
+            ],
+            "class": "Encryption Asymmetric",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 702,
+            "description": "Import RSA public encryption keys.",
+            "itemtype": "method",
+            "name": "asym.importEncryptPublicKey",
+            "params": [
+                {
+                    "name": "publicJwk",
+                    "description": "- public (decrypt) JSON key",
+                    "type": "Object"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if import fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with publicKey CryptoKey",
+                    "type": "Function"
+                }
+            ],
+            "class": "Encryption Asymmetric",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 716,
             "description": "Generate RSA encryption keys. Private CryptoKey is not exportable, and can be stored safely.",
             "itemtype": "method",
             "name": "asym.generateEncryptKey",
@@ -226,7 +330,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 482,
+            "line": 739,
             "description": "Generate RSA signature keys. Private CryptoKey is not exportable, and can be stored safely.",
             "itemtype": "method",
             "name": "asym.generateSignKey",
@@ -247,7 +351,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 507,
+            "line": 764,
             "description": "Decrypt. For large payloads, keys are RSA decrypted and content is AES decrypted. Otherwise, content is RSA decrypted.",
             "itemtype": "method",
             "name": "asym.decrypt",
@@ -278,7 +382,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 527,
+            "line": 784,
             "description": "Verify and Decrypt. For large payloads, AES keys are RSA decrypted and content is AES decrypted. Otherwise, content is RSA decrypted.\nThe order of operations is: verify encrypted content/keys, decrypt, verify decrypted content/keys, AES decrypt (if required).",
             "itemtype": "method",
             "name": "asym.verifyAndDecrypt",
@@ -314,7 +418,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 577,
+            "line": 810,
             "description": "Encrypt. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted. \n\"Large\" trashhold is defined in config.",
             "itemtype": "method",
             "name": "asym.encrypt",
@@ -345,7 +449,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 592,
+            "line": 834,
             "description": "Encrypt and Sign. For large payloads, the content is AES encrypted and keys are RSA encrypted. Otherwise, the content is RSA encrypted.\n\"Large\" trashhold is defined in config.\nThe order of operations is: AES (encrypt if required), encrypt content/keys, sign content/keys, sign encrypted content/keys.",
             "itemtype": "method",
             "name": "asym.encryptAndSign",
@@ -381,7 +485,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 628,
+            "line": 877,
             "itemtype": "method",
             "name": "sym.generateKeys",
             "params": [
@@ -401,7 +505,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 646,
+            "line": 898,
             "itemtype": "method",
             "name": "sym.importKeys",
             "params": [
@@ -426,7 +530,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 675,
+            "line": 927,
             "itemtype": "method",
             "name": "sym.genKeysAndEncrypt",
             "params": [
@@ -451,7 +555,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 690,
+            "line": 942,
             "itemtype": "method",
             "name": "sym.encrypt",
             "params": [
@@ -481,7 +585,37 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 717,
+            "line": 971,
+            "itemtype": "method",
+            "name": "sym.encryptWithPassword",
+            "params": [
+                {
+                    "name": "password",
+                    "description": "- Password used to generate AES and HMAC keys",
+                    "type": "String"
+                },
+                {
+                    "name": "data",
+                    "description": "- Data to encrypt",
+                    "type": "Uint8Array | ArrayBuffer"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if key generation or encryption fail",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with {aesEncrypted: ArrayBuffer, hmac: {ArrayBuffer}",
+                    "type": "Function"
+                }
+            ],
+            "class": "Encryption Symmetric",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 994,
             "itemtype": "method",
             "name": "sym.decrypt",
             "params": [
@@ -511,7 +645,72 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 758,
+            "line": 1013,
+            "itemtype": "method",
+            "name": "sym.decryptWithPassword",
+            "params": [
+                {
+                    "name": "password",
+                    "description": "- Password used to generate AES and HMAC keys",
+                    "type": "String"
+                },
+                {
+                    "name": "data",
+                    "description": "- Data to encrypt",
+                    "type": "Uint8Array | ArrayBuffer"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if key generation or encryption fail",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with {aesEncrypted: ArrayBuffer, hmac: {ArrayBuffer}",
+                    "type": "Function"
+                }
+            ],
+            "class": "Encryption Symmetric",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 1043,
+            "itemtype": "method",
+            "name": "derive",
+            "params": [
+                {
+                    "name": "password",
+                    "description": "",
+                    "type": "String"
+                },
+                {
+                    "name": "bitLength",
+                    "description": "- request lenght, in bits",
+                    "type": "Int"
+                },
+                {
+                    "name": "options",
+                    "description": "- number of iterations and salt, if required. Autogenerated otherwise",
+                    "type": "Object"
+                },
+                {
+                    "name": "onError",
+                    "description": "- called with error details if derive fails",
+                    "type": "Function"
+                },
+                {
+                    "name": "onSuccess",
+                    "description": "- called with {salt: ArrayBuffer, interations: int, array: derived data}",
+                    "type": "Function"
+                }
+            ],
+            "class": "Password-Based Key Derivation",
+            "module": "simpleCrypto"
+        },
+        {
+            "file": "src\\simplecrypto.js",
+            "line": 1097,
             "description": "Encode encrypted data",
             "itemtype": "method",
             "name": "pack.encode",
@@ -531,7 +730,7 @@
         },
         {
             "file": "src\\simplecrypto.js",
-            "line": 800,
+            "line": 1139,
             "description": "Decode encrypted data. Decoding should be a zero copy operation, since all returned Uint8Arrays point to the original buffer",
             "itemtype": "method",
             "name": "pack.decode",
@@ -553,7 +752,7 @@
     "warnings": [
         {
             "message": "param name missing: {Object}",
-            "line": " src\\simplecrypto.js:507"
+            "line": " src\\simplecrypto.js:764"
         }
     ]
 }

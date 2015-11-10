@@ -4,7 +4,8 @@ YUI.add("yuidoc-meta", function(Y) {
         "Encryption Asymmetric",
         "Encryption Symmetric",
         "Key Storage",
-        "Packaging"
+        "Packaging",
+        "Password-Based Key Derivation"
     ],
     "modules": [
         "simpleCrypto"

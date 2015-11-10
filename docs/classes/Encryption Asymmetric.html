@@ -17,7 +17,7 @@
                 <h1><img src="https://www.encryb.com/img/crib-md.png" title="simplecrypto.js"></h1>
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.0.2</em>
+            <em>API Docs for: 0.0.3</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -42,6 +42,7 @@
                                 <li><a href="../classes/Encryption Symmetric.html">Encryption Symmetric</a></li>
                                 <li><a href="../classes/Key Storage.html">Key Storage</a></li>
                                 <li><a href="../classes/Packaging.html">Packaging</a></li>
+                                <li><a href="../classes/Password-Based Key Derivation.html">Password-Based Key Derivation</a></li>
                             </ul>
                 
                             <ul id="api-modules" class="apis modules">
@@ -84,7 +85,7 @@
 
 
         <div class="foundat">
-            Defined in: <a href="../files/src_simplecrypto.js.html#l438"><code>src\simplecrypto.js:438</code></a>
+            Defined in: <a href="../files/src_simplecrypto.js.html#l649"><code>src\simplecrypto.js:649</code></a>
         </div>
 
             Module: <a href="../modules/simpleCrypto.html">simpleCrypto</a>
@@ -138,6 +139,18 @@
 
                             </li>
                             <li class="index-item method">
+                                <a href="#method_asym.importEncryptKey">asym.importEncryptKey</a>
+
+                            </li>
+                            <li class="index-item method">
+                                <a href="#method_asym.importEncryptPrivateKey">asym.importEncryptPrivateKey</a>
+
+                            </li>
+                            <li class="index-item method">
+                                <a href="#method_asym.importEncryptPublicKey">asym.importEncryptPublicKey</a>
+
+                            </li>
+                            <li class="index-item method">
                                 <a href="#method_asym.verifyAndDecrypt">asym.verifyAndDecrypt</a>
 
                             </li>
@@ -181,7 +194,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/src_simplecrypto.js.html#l507"><code>src\simplecrypto.js:507</code></a>
+        <a href="../files/src_simplecrypto.js.html#l764"><code>src\simplecrypto.js:764</code></a>
         </p>
 
 
@@ -282,7 +295,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/src_simplecrypto.js.html#l577"><code>src\simplecrypto.js:577</code></a>
+        <a href="../files/src_simplecrypto.js.html#l810"><code>src\simplecrypto.js:810</code></a>
         </p>
 
 
@@ -390,7 +403,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/src_simplecrypto.js.html#l592"><code>src\simplecrypto.js:592</code></a>
+        <a href="../files/src_simplecrypto.js.html#l834"><code>src\simplecrypto.js:834</code></a>
         </p>
 
 
@@ -503,7 +516,7 @@ The order of operations is: AES (encrypt if required), encrypt content/keys, sig
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/src_simplecrypto.js.html#l458"><code>src\simplecrypto.js:458</code></a>
+        <a href="../files/src_simplecrypto.js.html#l716"><code>src\simplecrypto.js:716</code></a>
         </p>
 
 
@@ -575,7 +588,7 @@ The order of operations is: AES (encrypt if required), encrypt content/keys, sig
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/src_simplecrypto.js.html#l443"><code>src\simplecrypto.js:443</code></a>
+        <a href="../files/src_simplecrypto.js.html#l654"><code>src\simplecrypto.js:654</code></a>
         </p>
 
 
@@ -647,7 +660,7 @@ The order of operations is: AES (encrypt if required), encrypt content/keys, sig
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/src_simplecrypto.js.html#l482"><code>src\simplecrypto.js:482</code></a>
+        <a href="../files/src_simplecrypto.js.html#l739"><code>src\simplecrypto.js:739</code></a>
         </p>
 
 
@@ -695,6 +708,302 @@ The order of operations is: AES (encrypt if required), encrypt content/keys, sig
 
 
 </div>
+<div id="method_asym.importEncryptKey" class="method item">
+    <h3 class="name"><code>asym.importEncryptKey</code></h3>
+
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+                <li class="arg">
+                        <code>publicJwk</code>
+                </li>
+                <li class="arg">
+                        <code>privateJwk</code>
+                </li>
+                <li class="arg">
+                        <code>onError</code>
+                </li>
+                <li class="arg">
+                        <code>onSuccess</code>
+                </li>
+            </ul><span class="paren">)</span>
+        </div>
+
+
+
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_simplecrypto.js.html#l669"><code>src\simplecrypto.js:669</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Import RSA encryption keys.</p>
+
+    </div>
+
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+                <li class="param">
+                        <code class="param-name">publicJwk</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Object" class="crosslink external" target="_blank">Object</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>public (decrypt) JSON key</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">privateJwk</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Object" class="crosslink external" target="_blank">Object</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>private (encrypt) JSON key</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">onError</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function" class="crosslink external" target="_blank">Function</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>called with error details if import fails</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">onSuccess</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function" class="crosslink external" target="_blank">Function</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>called with {privateKey: CryptoKey, publicKey: CryptoKey, privateJwk: JWK, publicJwk: JWK}</li>
+</ul>
+
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+
+
+</div>
+<div id="method_asym.importEncryptPrivateKey" class="method item">
+    <h3 class="name"><code>asym.importEncryptPrivateKey</code></h3>
+
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+                <li class="arg">
+                        <code>publicJwk</code>
+                </li>
+                <li class="arg">
+                        <code>privateJwk</code>
+                </li>
+                <li class="arg">
+                        <code>onError</code>
+                </li>
+                <li class="arg">
+                        <code>onSuccess</code>
+                </li>
+            </ul><span class="paren">)</span>
+        </div>
+
+
+
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_simplecrypto.js.html#l687"><code>src\simplecrypto.js:687</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Import RSA private encryption keys.</p>
+
+    </div>
+
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+                <li class="param">
+                        <code class="param-name">publicJwk</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Object" class="crosslink external" target="_blank">Object</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>public (decrypt) JSON key</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">privateJwk</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Object" class="crosslink external" target="_blank">Object</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>private (encrypt) JSON key</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">onError</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function" class="crosslink external" target="_blank">Function</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>called with error details if import fails</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">onSuccess</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function" class="crosslink external" target="_blank">Function</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>called with privateKey CryptoKey</li>
+</ul>
+
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+
+
+</div>
+<div id="method_asym.importEncryptPublicKey" class="method item">
+    <h3 class="name"><code>asym.importEncryptPublicKey</code></h3>
+
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+                <li class="arg">
+                        <code>publicJwk</code>
+                </li>
+                <li class="arg">
+                        <code>onError</code>
+                </li>
+                <li class="arg">
+                        <code>onSuccess</code>
+                </li>
+            </ul><span class="paren">)</span>
+        </div>
+
+
+
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_simplecrypto.js.html#l702"><code>src\simplecrypto.js:702</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Import RSA public encryption keys.</p>
+
+    </div>
+
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+                <li class="param">
+                        <code class="param-name">publicJwk</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Object" class="crosslink external" target="_blank">Object</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>public (decrypt) JSON key</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">onError</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function" class="crosslink external" target="_blank">Function</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>called with error details if import fails</li>
+</ul>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">onSuccess</code>
+                        <span class="type"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function" class="crosslink external" target="_blank">Function</a></span>
+
+
+                    <div class="param-description">
+                        <ul>
+<li>called with publicKey CryptoKey</li>
+</ul>
+
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+
+
+</div>
 <div id="method_asym.verifyAndDecrypt" class="method item">
     <h3 class="name"><code>asym.verifyAndDecrypt</code></h3>
 
@@ -728,7 +1037,7 @@ The order of operations is: AES (encrypt if required), encrypt content/keys, sig
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/src_simplecrypto.js.html#l527"><code>src\simplecrypto.js:527</code></a>
+        <a href="../files/src_simplecrypto.js.html#l784"><code>src\simplecrypto.js:784</code></a>
         </p>
 
 

@@ -21,14 +21,14 @@ describe('asymmetric', function() {
     it('import private key', function(done) {
         var privateKey = JSON.parse('{"alg":"RSA-OAEP","d":"SYDKW_-WSonpAoXFUuawoJJBDyyhV7Np8uC5UtgyorKn9h8mnE8Q_0mBet2WygnkQ3LiYn-yTV3-o4tvCdFL-LzJE4sx9wkJgWI5Qt9lpWWcat65bkNn2oG-BFeXhRuk8gsg-bt7UN8eYA4KT8NHLXe5XNIgPce6xLByPDnRvZS-FL-BDo3kTIxwgiNycMkvYgCCdRsFrpk4VM6QvZ-7wR4-8oBoU6s21LkI8FhBEHJvGNj-ee4CWULXkAC3xpQFHhh018Tgaxoh5brkWEsY3jqpnNIbWAUofdf9lgHTXic40S09Ezduo2kB3bGKN7y56zB7eVVzRqwp8oBrjEbbqQ","dp":"AzolxyCM0mN1eRT-BbILUPh9_vqDvrEgKHCM8ret_ZZ7SZ4QS3tvrIpk-GBdaq66fC44EmjeKS4myahue43IvFiOGjqZ6_pzF5E-6pfyki9wJASPBM3PYRtmFr54fYv781xVRgxjIYqZbE7gXR8L_OhUxv26rEznE2KLi9Mnvqs","dq":"oVv8pgcdrZ62YadzlyfUGjlvcBvGg58FpifaFo3nJxo0ziZLQJbycjc510N9rW_pA76mgg90H6PPj_uCjtUi_YW3iFsKNz8ZW3tp0Jw2G8TNQ3iwlTfTib1lOF5P4FK66zUqatAuI_p2-QAR9bZGmd4Ex50h9nli8Sb8kYZyeh0","e":"AQAB","ext":true,"key_ops":["decrypt"],"kty":"RSA","n":"nUpPP8LmFqM6og1oCmYKqOhTEOp0fheV_qbHVvZMoBE1SURMZVuB7xGtWaZfdKVbxnvLSJbm2Tvd13W7VWoFzSaVSvtQnYHI86StCeK_hqflQWjfl6eDd90H26s9T2LNgnMk50c1wDETxTCvc68TruA-OnD0WM4I9tlKDIFhAi74mLxFkBU0-mtR34Ple9JbbgK_OpBAKffkFI8oBtXy3jpe03BYwG-vAn4en5g1KLpRKVjhdj290MxHO_drrfamGbPg4pGQOJaJUAysTU-w64tR7TnrZgLR9v5ghuBurWRR-jI1q-hfcRqRSumXsDfWzkRPR6w0tuJEgAp4zRoV4Q","p":"zlaqputB65cRXkY1HryRnIyat3LRmNGCA6xttbq-oXXaj7KNv37qQ_Nj2F9a7E43LGH3qlGQHww65RTDzh2LJYk6Y5Qkm_DITwHefhfEl1q-LaFaALTegxEIRxIKfn7AJgimbs6X1XlfYjqcWMQV95aGMxOlmH64ZE6n7bF4Fqs","q":"wyWVytyr8UgPzJdisvwTUmfEtcydLZN7yXP1mXLjobaHsoBVJGoZYipnacxXa2MAMmBdIAxZhve_d7IB4b7MAADa9peeWpO3cyFjAhj-dbhK8dioZT_OubM3_ThSdTB5rv2_4lhFGuu_WkX81XSoq61qf7FI5Cv_aEU51cfW9aM","qi":"XbzVUJwCM3P3fJjpd6gep3uUnhIuUWWdWlTT6WhJ_twNZ-hSziZwHX6vM7KkDoHNgylyBQtfwY1xdLS2UFH1JF2KSEUybgHRz8xRP8FS12QTD2XrY84Y8y_a68llYwsA40mgmDVEq_tmK_QP8gxx7Cqvrym1AFeWD39PsNeqUXM"}');
         
-        simpleCrypto._asym.importEncryptKey(privateKey, ["decrypt"], logError.bind(null, done), function(privateKey) {
+        simpleCrypto.internal.asym.importEncryptKey(privateKey, ["decrypt"], logError.bind(null, done), function(privateKey) {
             gPrivateKey = privateKey;
             done();            
         });
     });
     it('import public key', function(done){
         var publicKey = JSON.parse('{"alg":"RSA-OAEP","e":"AQAB","ext":true,"key_ops":["encrypt"],"kty":"RSA","n":"nUpPP8LmFqM6og1oCmYKqOhTEOp0fheV_qbHVvZMoBE1SURMZVuB7xGtWaZfdKVbxnvLSJbm2Tvd13W7VWoFzSaVSvtQnYHI86StCeK_hqflQWjfl6eDd90H26s9T2LNgnMk50c1wDETxTCvc68TruA-OnD0WM4I9tlKDIFhAi74mLxFkBU0-mtR34Ple9JbbgK_OpBAKffkFI8oBtXy3jpe03BYwG-vAn4en5g1KLpRKVjhdj290MxHO_drrfamGbPg4pGQOJaJUAysTU-w64tR7TnrZgLR9v5ghuBurWRR-jI1q-hfcRqRSumXsDfWzkRPR6w0tuJEgAp4zRoV4Q"}');
-        simpleCrypto._asym.importEncryptKey(publicKey, ["encrypt"], logError.bind(null, done), function(publicKey) {
+        simpleCrypto.internal.asym.importEncryptKey(publicKey, ["encrypt"], logError.bind(null, done), function(publicKey) {
             gPublicKey = publicKey;
             done();            
         });
